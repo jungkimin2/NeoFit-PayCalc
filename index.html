@@ -1031,7 +1031,7 @@
                                                                                 {detail.product}
                                                                             </div>
                                                                             <div className="text-green-400 font-bold mt-2 text-lg flex items-center gap-1">
-                                                                                <Icon icon={DollarSign} size={16} />
+                                                                                <Icon icon={DollarSign} size={16} style={{ marginTop: '2px' }} />
                                                                                 {(detail.price || 0).toLocaleString()}원
                                                                             </div>
                                                                             <div className="text-gray-500 text-xs mt-1">
@@ -1160,7 +1160,7 @@
                                                                 }));
                                                             }}
                                                             placeholder="비밀번호"
-                                                            className="glass-effect rounded-xl px-4 py-3 flex-1 focus:border-green-400 focus:outline-none text-base transition-all"
+                                                            className="glass-effect rounded-xl px-3 sm:px-4 py-3 w-24 sm:flex-1 focus:border-green-400 focus:outline-none text-base transition-all"
                                                             onKeyPress={(e) => {
                                                                 if (e.key === 'Enter') {
                                                                     handleAdminApproval(day);
@@ -1169,7 +1169,7 @@
                                                         />
                                                         <button
                                                             onClick={() => handleAdminApproval(day)}
-                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-6 py-3 text-base font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white"
+                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-4 sm:px-6 py-3 text-base font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white flex-1 sm:flex-initial"
                                                         >
                                                             승인
                                                         </button>
@@ -1195,7 +1195,7 @@
                                                                     }));
                                                                 }}
                                                                 placeholder="수정 비밀번호"
-                                                                className="glass-effect rounded-xl px-4 py-3 flex-1 focus:border-orange-400 focus:outline-none text-base transition-all"
+                                                                className="glass-effect rounded-xl px-3 sm:px-4 py-3 w-32 sm:flex-1 focus:border-orange-400 focus:outline-none text-base transition-all"
                                                                 onKeyPress={(e) => {
                                                                     if (e.key === 'Enter') {
                                                                         handleEditMode(day);
@@ -1204,7 +1204,7 @@
                                                             />
                                                             <button
                                                                 onClick={() => handleEditMode(day)}
-                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-6 py-3 text-base font-semibold transition-all whitespace-nowrap flex items-center gap-2 hover:shadow-lg text-white"
+                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-4 sm:px-6 py-3 text-base font-semibold transition-all whitespace-nowrap flex items-center gap-2 hover:shadow-lg text-white flex-1 sm:flex-initial"
                                                             >
                                                                 <Icon icon={Edit} size={18} />
                                                                 수정
@@ -1306,19 +1306,19 @@
                         {/* 월간 총계 및 인센티브 */}
                         <div className="gradient-border glow-green">
                             <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50">
-                                <h2 className="text-3xl font-black mb-8 text-center" style={{ color: '#00FF88' }}>
+                                <h2 className="text-3xl font-black mb-8 text-center text-white">
                                     월간 급여 계산
                                 </h2>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 text-center mb-6 sm:mb-8">
                                     <div className="glass-effect rounded-2xl p-4 sm:p-6 hover:scale-105 transition-all duration-300">
                                         <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 font-semibold">월간 총매출</p>
-                                        <p className="text-2xl sm:text-3xl font-black">{(monthlyTotal || 0).toLocaleString()}원</p>
+                                        <p className="text-2xl sm:text-3xl font-black" style={{ color: '#FF8C00' }}>{(monthlyTotal || 0).toLocaleString()}원</p>
                                     </div>
                                     
                                     <div className="glass-effect rounded-2xl p-4 sm:p-6 hover:scale-105 transition-all duration-300">
                                         <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 font-semibold">인센티브율 ({employeeType === 'full' ? '정직원' : '파트타임'})</p>
-                                        <p className="text-2xl sm:text-3xl font-black" style={{ color: '#00FF88' }}>{incentiveRate || 0}%</p>
+                                        <p className="text-2xl sm:text-3xl font-black" style={{ color: '#00C6FF' }}>{incentiveRate || 0}%</p>
                                     </div>
                                     
                                     <div className="glass-effect rounded-2xl p-4 sm:p-6 hover:scale-105 transition-all duration-300">
@@ -1337,35 +1337,35 @@
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-xs text-center">
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">2,500만원 미만</p>
-                                            <p className="font-bold text-base sm:text-lg">{employeeType === 'full' ? '5%' : '2.5%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF6B6B' }}>{employeeType === 'full' ? '5%' : '2.5%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">2,500만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg">{employeeType === 'full' ? '5.5%' : '2.75%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF9F40' }}>{employeeType === 'full' ? '5.5%' : '2.75%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">3,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg">{employeeType === 'full' ? '6%' : '3%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FFD93D' }}>{employeeType === 'full' ? '6%' : '3%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">3,500만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg">{employeeType === 'full' ? '6.5%' : '3.25%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#6BCF7F' }}>{employeeType === 'full' ? '6.5%' : '3.25%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">4,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg">{employeeType === 'full' ? '7%' : '3.5%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#4ECDC4' }}>{employeeType === 'full' ? '7%' : '3.5%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">4,500만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg">{employeeType === 'full' ? '7.5%' : '3.75%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#45B7D1' }}>{employeeType === 'full' ? '7.5%' : '3.75%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">5,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg">{employeeType === 'full' ? '8%' : '4%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#5D5FEF' }}>{employeeType === 'full' ? '8%' : '4%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">6,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg">{employeeType === 'full' ? '10%' : '5%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#A55FEB' }}>{employeeType === 'full' ? '10%' : '5%'}</p>
                                         </div>
                                     </div>
                                     
