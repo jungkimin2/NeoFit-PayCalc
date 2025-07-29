@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeoFit PayCalc - 네오핏 급여 계산기</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.js"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     <style>
         * {
@@ -42,9 +41,11 @@
         }
 
         .glass-effect {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(31, 41, 55, 0.6);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
         }
 
         .neon-text {
@@ -54,14 +55,14 @@
         .gradient-border {
             position: relative;
             background: linear-gradient(45deg, #00FF88, #00C66E);
-            padding: 1px;
-            border-radius: 1rem;
+            padding: 2px;
+            border-radius: 1.5rem;
         }
 
         .gradient-border > div {
-            background: #1f2937;
-            border-radius: 1rem;
-            padding: 1.5rem;
+            background: rgba(17, 24, 39, 0.9);
+            border-radius: 1.5rem;
+            padding: 2rem;
         }
 
         ::-webkit-scrollbar {
@@ -102,7 +103,10 @@
 
         /* Tailwind-like utility classes */
         .min-h-screen { min-height: 100vh; }
-        .bg-gradient-to-br { background: linear-gradient(to bottom right, #111827, #1f2937, #111827); }
+        .bg-gradient-to-br { 
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #0a0a0a 100%);
+            background-attachment: fixed;
+        }
         .text-gray-100 { color: #f3f4f6; }
         .text-gray-400 { color: #9ca3af; }
         .text-gray-300 { color: #d1d5db; }
@@ -176,8 +180,8 @@
         .max-h-40 { max-height: 10rem; }
         .overflow-y-auto { overflow-y: auto; }
         .overflow-x-hidden { overflow-x: hidden; }
-        .bg-gray-800 { background-color: #1f2937; }
-        .bg-gray-700 { background-color: #374151; }
+        .bg-gray-800 { background-color: rgba(31, 41, 55, 0.7); }
+        .bg-gray-700 { background-color: rgba(55, 65, 81, 0.7); }
         .bg-gray-800\/50 { background-color: rgba(31, 41, 55, 0.5); }
         .bg-green-500\/20 { background-color: rgba(34, 197, 94, 0.2); }
         .bg-blue-500\/20 { background-color: rgba(59, 130, 246, 0.2); }
@@ -282,8 +286,17 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
-        const { Calendar, DollarSign, Check, TrendingUp, Edit, Plus, Trash2, User, Package, CreditCard } = lucide;
+        const useState = React.useState;
+        const Calendar = "calendar";
+        const DollarSign = "dollar-sign";
+        const Check = "check";
+        const TrendingUp = "trending-up";
+        const Edit = "edit";
+        const Plus = "plus";
+        const Trash2 = "trash-2";
+        const User = "user";
+        const Package = "package";
+        const CreditCard = "credit-card";
 
         // 환경 변수 또는 설정
         const CONFIG = {
@@ -524,13 +537,26 @@
             const incentiveAmount = monthlyTotal * (incentiveRate / 100);
             const weeklySales = calculateWeeklySales();
 
-            // Lucide 아이콘 컴포넌트
-            const Icon = ({ icon: IconComponent, size = 24, ...props }) => {
-                React.useEffect(() => {
-                    lucide.createIcons();
-                }, []);
+            // Lucide 아이콘 컴포넌트 (아이콘 사용 안 함)
+            const Icon = ({ icon: iconName, size = 24, style = {}, className = "" }) => {
+                const icons = {
+                    "calendar": "📅",
+                    "dollar-sign": "💰",
+                    "check": "✓",
+                    "trending-up": "📈",
+                    "edit": "✏️",
+                    "plus": "+",
+                    "trash-2": "🗑️",
+                    "user": "👤",
+                    "package": "📦",
+                    "credit-card": "💳"
+                };
                 
-                return <i data-lucide={IconComponent} {...props}></i>;
+                return (
+                    <span style={{ fontSize: size * 0.8 + 'px', lineHeight: 1, ...style }} className={className}>
+                        {icons[iconName] || "•"}
+                    </span>
+                );
             };
 
             return (
@@ -602,7 +628,7 @@
                             <div>
                                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
                                     <div className="p-2 bg-green-500/20 rounded-lg">
-                                        <Icon icon="calendar" size={28} style={{ color: '#00FF88' }} />
+                                        <Icon icon={Calendar} size={28} style={{ color: '#00FF88' }} />
                                     </div>
                                     매출 현황
                                 </h2>
@@ -640,7 +666,7 @@
                                                         {(dayData.amount || 0).toLocaleString()}원
                                                     </div>
                                                     <div className="text-xs sm:text-sm text-gray-400 flex items-center gap-2">
-                                                        <Icon icon="package" size={14} />
+                                                        <Icon icon={Package} size={14} />
                                                         {dayData.details?.length || 0}건의 매출
                                                     </div>
                                                 </div>
@@ -649,7 +675,7 @@
                                                 {dayData.details && dayData.details.length > 0 && (
                                                     <div className="space-y-2 mb-4">
                                                         <div className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                                                            <Icon icon="dollar-sign" size={16} />
+                                                            <Icon icon={DollarSign} size={16} />
                                                             매출 내역
                                                         </div>
                                                         <div className="max-h-40 overflow-y-auto space-y-2">
@@ -658,7 +684,7 @@
                                                                     <div className="flex justify-between items-start">
                                                                         <div className="flex-1">
                                                                             <div className="font-semibold text-white flex items-center gap-2">
-                                                                                <Icon icon="user" size={14} />
+                                                                                <Icon icon={User} size={14} />
                                                                                 {detail.customerName}
                                                                             </div>
                                                                             <div className="text-gray-400 text-xs mt-1 ml-5">
@@ -676,7 +702,7 @@
                                                                                 onClick={() => removeSaleDetail(day, detail.id)}
                                                                                 className="text-red-400 hover:text-red-300 ml-3 p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-all"
                                                                             >
-                                                                                <Icon icon="trash-2" size={16} />
+                                                                                <Icon icon={Trash2} size={16} />
                                                                             </button>
                                                                         )}
                                                                     </div>
@@ -689,7 +715,7 @@
                                                 {/* 매출이 없을 때 안내 */}
                                                 {(!dayData.details || dayData.details.length === 0) && dayData.amount === 0 && (
                                                     <div className="text-center py-6 text-gray-500 text-sm glass-effect rounded-xl mb-4">
-                                                        <Icon icon="dollar-sign" size={24} className="mx-auto mb-2 opacity-30" />
+                                                        <Icon icon={DollarSign} size={24} className="mx-auto mb-2 opacity-30" />
                                                         등록된 매출이 없습니다
                                                     </div>
                                                 )}
@@ -700,7 +726,7 @@
                                                         onClick={() => toggleDayExpansion(day)}
                                                         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-xl py-3 text-sm font-semibold transition-all mb-4 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                                                     >
-                                                        <Icon icon="plus" size={18} />
+                                                        <Icon icon={Plus} size={18} />
                                                         {expandedDays[day] ? '매출 입력 접기' : '매출 입력하기'}
                                                         <span className={`transform transition-transform ${expandedDays[day] ? 'rotate-180' : ''}`}>
                                                             ▼
@@ -712,7 +738,7 @@
                                                 {expandedDays[day] && !dayData.approved && (
                                                     <div className="glass-effect rounded-xl p-5 mb-4 space-y-4 slide-in">
                                                         <div className="text-sm font-bold text-green-400 mb-4 flex items-center gap-2">
-                                                            <Icon icon="edit" size={16} />
+                                                            <Icon icon={Edit} size={16} />
                                                             {selectedMonth + 1}월 {day}일 매출 입력
                                                         </div>
 
@@ -737,7 +763,7 @@
                                                         {/* 상품 선택 */}
                                                         <div>
                                                             <label className="block text-xs font-semibold mb-2 text-gray-300 flex items-center gap-2">
-                                                                <Icon icon="package" size={14} />
+                                                                <Icon icon={Package} size={14} />
                                                                 상품
                                                             </label>
                                                             <select
@@ -758,7 +784,7 @@
                                                         {/* 가격 입력 */}
                                                         <div>
                                                             <label className="block text-xs font-semibold mb-2 text-gray-300 flex items-center gap-2">
-                                                                <Icon icon="credit-card" size={14} />
+                                                                <Icon icon={CreditCard} size={14} />
                                                                 가격
                                                             </label>
                                                             <input
@@ -816,7 +842,7 @@
                                                             className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl px-4 py-3 text-base font-semibold cursor-default flex items-center gap-2 w-full justify-center shadow-lg"
                                                             disabled
                                                         >
-                                                            <Icon icon="check" size={18} />
+                                                            <Icon icon={Check} size={18} />
                                                             정산완료
                                                         </button>
                                                         <div className="flex gap-2">
@@ -842,7 +868,7 @@
                                                                 onClick={() => handleEditMode(day)}
                                                                 className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 rounded-xl px-6 py-3 text-base font-semibold transition-all whitespace-nowrap flex items-center gap-2 shadow-lg hover:shadow-xl"
                                                             >
-                                                                <Icon icon="edit" size={18} />
+                                                                <Icon icon={Edit} size={18} />
                                                                 수정
                                                             </button>
                                                         </div>
@@ -860,7 +886,7 @@
                             <div>
                                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
                                     <div className="p-2 bg-blue-500/20 rounded-lg">
-                                        <Icon icon="trending-up" size={28} style={{ color: '#00C6FF' }} />
+                                        <Icon icon={TrendingUp} size={28} style={{ color: '#00C6FF' }} />
                                     </div>
                                     주간 매출 합계
                                 </h2>
