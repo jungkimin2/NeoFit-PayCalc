@@ -1,0 +1,17 @@
+# GitHub에 코드 업로드하기 위한 명령어
+
+# 1. Git 초기화 및 파일 추가
+cd /Users/jeong_gimin/Desktop/관리자앱
+git init
+git add .
+git commit -m "Initial commit: NeoFit PayCalc - 네오핏 급여 계산기"
+
+# 2. GitHub 원격 저장소 연결 (YOUR_USERNAME을 실제 GitHub 사용자명으로 변경)
+git remote add origin https://github.com/YOUR_USERNAME/neofit-paycalc.git
+
+# 3. 코드 푸시
+git branch -M main
+git push -u origin main
+
+# 만약 오류가 발생하면 다음 명령어 사용:
+# git push -u origin main --force
