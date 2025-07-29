@@ -349,8 +349,31 @@
 
         const NeoFitPayCalc = () => {
             const [salesData, setSalesData] = useState(() => {
-                const saved = localStorage.getItem('neofitSalesData');
-                return saved ? JSON.parse(saved) : {};
+                try {
+                    // localStorage 먼저 확인
+                    const localSaved = localStorage.getItem('neofitSalesData');
+                    if (localSaved) {
+                        return JSON.parse(localSaved);
+                    }
+                    
+                    // sessionStorage 확인 (fallback)
+                    const sessionSaved = sessionStorage.getItem('neofitSalesData');
+                    if (sessionSaved) {
+                        return JSON.parse(sessionSaved);
+                    }
+                    
+                    // window.localStorage 확인 (iOS 대응)
+                    if (window.localStorage) {
+                        const windowSaved = window.localStorage.getItem('neofitSalesData');
+                        if (windowSaved) {
+                            return JSON.parse(windowSaved);
+                        }
+                    }
+                } catch (e) {
+                    console.error('데이터 로드 실패:', e);
+                }
+                
+                return {};
             });
             const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
             const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -366,9 +389,22 @@
             const [viewMode, setViewMode] = useState('daily'); // 'daily', 'weekly', 'monthly'
             const dailyViewRef = React.useRef(null);
             
-            // localStorage에 데이터 저장
+            // localStorage에 데이터 저장 (모바일 대응 강화)
             React.useEffect(() => {
-                localStorage.setItem('neofitSalesData', JSON.stringify(salesData));
+                try {
+                    // localStorage 저장
+                    localStorage.setItem('neofitSalesData', JSON.stringify(salesData));
+                    
+                    // sessionStorage에도 백업
+                    sessionStorage.setItem('neofitSalesData', JSON.stringify(salesData));
+                    
+                    // iOS Safari Private Mode 대응
+                    if (window.localStorage) {
+                        window.localStorage.setItem('neofitSalesData', JSON.stringify(salesData));
+                    }
+                } catch (e) {
+                    console.error('데이터 저장 실패:', e);
+                }
             }, [salesData]);
 
             // 상품 목록
@@ -1160,7 +1196,7 @@
                                                                 }));
                                                             }}
                                                             placeholder="비밀번호"
-                                                            className="glass-effect rounded-xl px-3 sm:px-4 py-3 w-24 sm:flex-1 focus:border-green-400 focus:outline-none text-base transition-all text-center"
+                                                            className="glass-effect rounded-xl px-2 sm:px-4 py-3 w-20 sm:flex-1 focus:border-green-400 focus:outline-none text-sm sm:text-base transition-all text-center"
                                                             onKeyPress={(e) => {
                                                                 if (e.key === 'Enter') {
                                                                     handleAdminApproval(day);
@@ -1169,7 +1205,7 @@
                                                         />
                                                         <button
                                                             onClick={() => handleAdminApproval(day)}
-                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-4 sm:px-6 py-3 text-base font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white flex-1 sm:flex-initial"
+                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-3 sm:px-6 py-3 text-sm sm:text-base font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white flex-1 sm:flex-initial"
                                                         >
                                                             승인
                                                         </button>
@@ -1195,7 +1231,7 @@
                                                                     }));
                                                                 }}
                                                                 placeholder="수정 비밀번호"
-                                                                className="glass-effect rounded-xl px-3 sm:px-4 py-3 w-32 sm:flex-1 focus:border-orange-400 focus:outline-none text-base transition-all text-center"
+                                                                className="glass-effect rounded-xl px-2 sm:px-4 py-3 w-24 sm:flex-1 focus:border-orange-400 focus:outline-none text-sm sm:text-base transition-all text-center"
                                                                 onKeyPress={(e) => {
                                                                     if (e.key === 'Enter') {
                                                                         handleEditMode(day);
@@ -1204,7 +1240,7 @@
                                                             />
                                                             <button
                                                                 onClick={() => handleEditMode(day)}
-                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-4 sm:px-6 py-3 text-base font-semibold transition-all whitespace-nowrap flex items-center gap-2 hover:shadow-lg text-white flex-1 sm:flex-initial"
+                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-3 sm:px-6 py-3 text-sm sm:text-base font-semibold transition-all whitespace-nowrap flex items-center gap-2 hover:shadow-lg text-white flex-1 sm:flex-initial"
                                                             >
                                                                 <Icon icon={Edit} size={18} />
                                                                 수정
