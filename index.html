@@ -79,6 +79,24 @@
         ::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(to bottom, #00FF88, #00FF88);
         }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(31, 41, 55, 0.5);
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 136, 0.5);
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 136, 0.8);
+        }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -325,24 +343,24 @@
             ADMIN_PASSWORD: '4405', // 관리자 비밀번호
             INCENTIVE_RATES: {
                 full: {
-                    60000000: 10,
-                    50000000: 8,
-                    45000000: 7.5,
-                    40000000: 7,
-                    35000000: 6.5,
+                    60000000: 12,
+                    50000000: 10,
+                    45000000: 9,
+                    40000000: 8,
+                    35000000: 7,
                     30000000: 6,
-                    25000000: 5.5,
-                    0: 5
+                    25000000: 5,
+                    0: 4
                 },
                 part: {
-                    60000000: 5,
-                    50000000: 4,
-                    45000000: 3.75,
-                    40000000: 3.5,
-                    35000000: 3.25,
+                    60000000: 6,
+                    50000000: 5,
+                    45000000: 4.5,
+                    40000000: 4,
+                    35000000: 3.5,
                     30000000: 3,
-                    25000000: 2.75,
-                    0: 2.5
+                    25000000: 2.5,
+                    0: 2
                 }
             }
         };
@@ -388,6 +406,9 @@
             const [selectedModalDay, setSelectedModalDay] = useState(null);
             const [viewMode, setViewMode] = useState('daily'); // 'daily', 'weekly', 'monthly'
             const dailyViewRef = React.useRef(null);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [showSearchResultModal, setShowSearchResultModal] = useState(false);
+            const [searchResults, setSearchResults] = useState([]);
             
             // localStorage에 데이터 저장 (모바일 대응 강화)
             React.useEffect(() => {
@@ -408,7 +429,47 @@
             }, [salesData]);
 
             // 상품 목록
-            const products = ['1개월', '3개월', '6개월', '12개월', 'PT 10회', 'PT 20회', '운동복', '락커', '일일권'];
+            const healthProducts = ['1개월', '3개월', '6개월', '12개월'];
+            const pilatesProducts = ['3개월 (24회 주 2회)', '6개월 (48회 주 2회)', '12개월 (96회 주 2회)'];
+            const neofitProducts = ['1개월', '3개월', '6개월', '12개월'];
+            const lockerProducts = ['운동복', '락커'];
+            const lockerPeriods = ['1개월', '2개월', '3개월', '4개월', '5개월', '6개월', '7개월', '8개월', '9개월', '10개월', '11개월', '12개월'];
+            
+            // 상품 가격표
+            const productPrices = {
+                '1개월': 110000,
+                '3개월': 270000,
+                '6개월': 420000,
+                '12개월': 600000,
+                '3개월 (24회 주 2회)': 384000,
+                '6개월 (48회 주 2회)': 624000,
+                '12개월 (96회 주 2회)': 960000,
+                // 운동복/락커 가격 (1개월부터 12개월까지)
+                '운동복 1개월': 10000,
+                '운동복 2개월': 20000,
+                '운동복 3개월': 30000,
+                '운동복 4개월': 40000,
+                '운동복 5개월': 50000,
+                '운동복 6개월': 60000,
+                '운동복 7개월': 70000,
+                '운동복 8개월': 80000,
+                '운동복 9개월': 90000,
+                '운동복 10개월': 100000,
+                '운동복 11개월': 110000,
+                '운동복 12개월': 120000,
+                '락커 1개월': 10000,
+                '락커 2개월': 20000,
+                '락커 3개월': 30000,
+                '락커 4개월': 40000,
+                '락커 5개월': 50000,
+                '락커 6개월': 60000,
+                '락커 7개월': 70000,
+                '락커 8개월': 80000,
+                '락커 9개월': 90000,
+                '락커 10개월': 100000,
+                '락커 11개월': 110000,
+                '락커 12개월': 120000
+            };
 
             // 날짜 키 생성
             const getDateKey = (day) => {
@@ -707,24 +768,136 @@
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
                             <line x1="1" y1="10" x2="23" y2="10"></line>
                         </svg>
+                    ),
+                    "search": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
                     )
                 };
                 
                 return svgIcons[iconName] || <span>•</span>;
             };
 
+            // 숫자에 천 단위 콤마 추가 함수
+            const formatNumberWithCommas = (num) => {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            };
+            
+            // 콤마가 있는 숫자에서 콤마 제거 함수
+            const removeCommas = (str) => {
+                return str.replace(/,/g, '');
+            };
+            
+            // 금액에 따른 색상 반환 함수
+            const getPriceColor = (price) => {
+                if (price >= 1000000) return '#FF6B6B'; // 100만원 이상: 빨간색
+                if (price >= 500000) return '#FFD93D'; // 50만원 이상: 노란색
+                if (price >= 300000) return '#6BCF7F'; // 30만원 이상: 초록색
+                if (price >= 100000) return '#4ECDC4'; // 10만원 이상: 청록색
+                return '#95E1D3'; // 10만원 미만: 연한 민트색
+            };
+            
+            // 오늘 날짜로 스크롤하는 함수
+            const scrollToToday = () => {
+                const today = new Date();
+                if (today.getMonth() === selectedMonth && today.getFullYear() === selectedYear) {
+                    const todayDay = today.getDate();
+                    const todayElement = document.getElementById(`day-${todayDay}`);
+                    if (todayElement) {
+                        todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } else {
+                    // 현재 월이 아니면 현재 월로 변경
+                    setSelectedMonth(today.getMonth());
+                    setSelectedYear(today.getFullYear());
+                    setTimeout(() => {
+                        const todayDay = today.getDate();
+                        const todayElement = document.getElementById(`day-${todayDay}`);
+                        if (todayElement) {
+                            todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 500);
+                }
+            };
+            
+            // 회원 검색 함수
+            const searchCustomer = () => {
+                if (!searchQuery.trim()) {
+                    alert('검색할 회원명을 입력해주세요.');
+                    return;
+                }
+                
+                const results = [];
+                
+                // 모든 날짜의 매출 데이터를 검색
+                Object.entries(salesData).forEach(([dateKey, dayData]) => {
+                    if (dayData.details && Array.isArray(dayData.details)) {
+                        dayData.details.forEach(detail => {
+                            if (detail.customerName && detail.customerName.toLowerCase().includes(searchQuery.toLowerCase())) {
+                                results.push({
+                                    ...detail,
+                                    date: dateKey
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                if (results.length === 0) {
+                    alert('검색 결과가 없습니다.');
+                    return;
+                }
+                
+                setSearchResults(results);
+                setShowSearchResultModal(true);
+            };
+            
             // 매출 입력 모달 컴포넌트
             const AddSaleModal = () => {
                 const [modalData, setModalData] = useState({
                     customerName: '',
-                    product: '',
-                    price: ''
+                    healthProduct: '',
+                    pilatesProduct: '',
+                    neofitProduct: '',
+                    lockerProduct: '',
+                    lockerType: '',
+                    lockerPeriod: '',
+                    price: '',
+                    discount: ''
                 });
+                
+                // 상품 선택 시 가격 자동 계산
+                React.useEffect(() => {
+                    let totalPrice = 0;
+                    if (modalData.healthProduct) totalPrice += productPrices[modalData.healthProduct] || 0;
+                    if (modalData.pilatesProduct) totalPrice += productPrices[modalData.pilatesProduct] || 0;
+                    if (modalData.neofitProduct) totalPrice += productPrices[modalData.neofitProduct] || 0;
+                    if (modalData.lockerType && modalData.lockerPeriod) {
+                        const lockerKey = `${modalData.lockerType} ${modalData.lockerPeriod}`;
+                        totalPrice += productPrices[lockerKey] || 0;
+                    }
+                    
+                    // 할인 금액 차감
+                    const discount = parseInt(removeCommas(modalData.discount)) || 0;
+                    const finalPrice = Math.max(0, totalPrice - discount);
+                    
+                    setModalData(prev => ({ ...prev, price: formatNumberWithCommas(finalPrice) }));
+                }, [modalData.healthProduct, modalData.pilatesProduct, modalData.neofitProduct, modalData.lockerType, modalData.lockerPeriod, modalData.discount]);
                 
                 const handleSubmit = (e) => {
                     e.preventDefault();
-                    if (!modalData.customerName || !modalData.product || !modalData.price) {
-                        alert('모든 필드를 입력해주세요.');
+                    const selectedProducts = [];
+                    if (modalData.healthProduct) selectedProducts.push('헬스: ' + modalData.healthProduct);
+                    if (modalData.pilatesProduct) selectedProducts.push('필라테스: ' + modalData.pilatesProduct);
+                    if (modalData.neofitProduct) selectedProducts.push('네오핏: ' + modalData.neofitProduct);
+                    if (modalData.lockerType && modalData.lockerPeriod) {
+                        selectedProducts.push(`${modalData.lockerType}: ${modalData.lockerPeriod}`);
+                    }
+                    
+                    if (!modalData.customerName || selectedProducts.length === 0 || !modalData.price) {
+                        alert('회원명, 상품(최소 1개), 가격을 모두 입력해주세요.');
                         return;
                     }
                     
@@ -732,8 +905,8 @@
                     const newDetail = {
                         id: Date.now() + Math.random(),
                         customerName: modalData.customerName.trim(),
-                        product: modalData.product,
-                        price: parseInt(modalData.price),
+                        product: selectedProducts.join(', '),
+                        price: parseInt(removeCommas(modalData.price)),
                         timestamp: new Date().toLocaleTimeString('ko-KR', { 
                             hour: '2-digit', 
                             minute: '2-digit',
@@ -757,7 +930,7 @@
                     });
                     
                     setShowAddSaleModal(false);
-                    setModalData({ customerName: '', product: '', price: '' });
+                    setModalData({ customerName: '', healthProduct: '', pilatesProduct: '', neofitProduct: '', lockerProduct: '', lockerType: '', lockerPeriod: '', price: '', discount: '' });
                     
                     // 오늘 날짜로 스크롤
                     setTimeout(() => {
@@ -770,7 +943,7 @@
                 
                 return (
                     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowAddSaleModal(false)}>
-                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '500px', maxWidth: '90%' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '500px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
                             <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#00FF88' }}>
                                 {selectedMonth + 1}월 {selectedModalDay}일 매출 입력
                             </h3>
@@ -789,27 +962,115 @@
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-sm font-semibold mb-2 text-gray-300">상품</label>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-300">헬스 이용권</label>
                                     <select
-                                        value={modalData.product}
-                                        onChange={(e) => setModalData({...modalData, product: e.target.value})}
+                                        value={modalData.healthProduct}
+                                        onChange={(e) => setModalData({...modalData, healthProduct: e.target.value})}
                                         className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
                                     >
-                                        <option value="">상품을 선택하세요</option>
-                                        {products.map(product => (
-                                            <option key={product} value={product}>{product}</option>
+                                        <option value="">헬스 이용권 선택</option>
+                                        {healthProducts.map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-sm font-semibold mb-2 text-gray-300">가격</label>
-                                    <input
-                                        type="number"
-                                        value={modalData.price}
-                                        onChange={(e) => setModalData({...modalData, price: e.target.value})}
+                                    <label className="block text-sm font-semibold mb-2 text-gray-300">필라테스 이용권</label>
+                                    <select
+                                        value={modalData.pilatesProduct}
+                                        onChange={(e) => setModalData({...modalData, pilatesProduct: e.target.value})}
                                         className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
-                                        placeholder="가격을 입력하세요"
+                                    >
+                                        <option value="">필라테스 이용권 선택</option>
+                                        {pilatesProducts.map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-300">네오핏 이용권</label>
+                                    <select
+                                        value={modalData.neofitProduct}
+                                        onChange={(e) => setModalData({...modalData, neofitProduct: e.target.value})}
+                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                    >
+                                        <option value="">네오핏 이용권 선택</option>
+                                        {neofitProducts.map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-300">운동복/락커 선택</label>
+                                    <select
+                                        value={modalData.lockerType}
+                                        onChange={(e) => setModalData({...modalData, lockerType: e.target.value, lockerPeriod: ''})}
+                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                    >
+                                        <option value="">운동복/락커 선택</option>
+                                        {lockerProducts.map(product => (
+                                            <option key={product} value={product}>{product}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                {modalData.lockerType && (
+                                    <div>
+                                        <label className="block text-sm font-semibold mb-2 text-gray-300">{modalData.lockerType} 이용 기간</label>
+                                        <select
+                                            value={modalData.lockerPeriod}
+                                            onChange={(e) => setModalData({...modalData, lockerPeriod: e.target.value})}
+                                            className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                        >
+                                            <option value="">기간 선택</option>
+                                            {lockerPeriods.map(period => {
+                                                const priceKey = `${modalData.lockerType} ${period}`;
+                                                const price = productPrices[priceKey] || 0;
+                                                return (
+                                                    <option key={period} value={period}>
+                                                        {period} - {price.toLocaleString()}원
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    </div>
+                                )}
+                                
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-300">할인 금액</label>
+                                    <input
+                                        type="text"
+                                        value={modalData.discount}
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/[^0-9]/g, '');
+                                            if (value === '') {
+                                                setModalData({...modalData, discount: ''});
+                                            } else {
+                                                setModalData({...modalData, discount: formatNumberWithCommas(value)});
+                                            }
+                                        }}
+                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                        placeholder="할인 금액을 입력하세요"
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-300">최종 가격</label>
+                                    <input
+                                        type="text"
+                                        value={modalData.price}
+                                        readOnly
+                                        className="glass-effect rounded-lg px-4 py-3 w-full bg-gray-800/50 cursor-not-allowed text-green-400 font-bold text-lg"
+                                        placeholder="상품을 선택하면 가격이 자동 계산됩니다"
                                     />
                                 </div>
                                 
@@ -833,18 +1094,103 @@
                     </div>
                 );
             };
+            
+            // 검색 결과 모달 컴포넌트
+            const SearchResultModal = () => {
+                const totalAmount = searchResults.reduce((sum, item) => sum + (item.price || 0), 0);
+                const groupedByDate = searchResults.reduce((acc, item) => {
+                    if (!acc[item.date]) acc[item.date] = [];
+                    acc[item.date].push(item);
+                    return acc;
+                }, {});
+                
+                return (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowSearchResultModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#00FF88' }}>
+                                '{searchQuery}' 검색 결과
+                            </h3>
+                            
+                            <div className="mb-6 text-center">
+                                <div className="glass-effect rounded-xl p-4 mb-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 결제 건수</p>
+                                    <p className="text-3xl font-bold text-white">{searchResults.length}건</p>
+                                </div>
+                                <div className="glass-effect rounded-xl p-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 결제 금액</p>
+                                    <p className="text-3xl font-bold" style={{ color: '#00FF88' }}>
+                                        {totalAmount.toLocaleString()}원
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                                {Object.entries(groupedByDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, items]) => (
+                                    <div key={date} className="glass-effect rounded-xl p-4">
+                                        <div className="font-semibold text-gray-300 mb-3">{date}</div>
+                                        <div className="space-y-2">
+                                            {items.map((item, index) => (
+                                                <div key={index} className="flex justify-between items-start p-3 bg-gray-800/50 rounded-lg">
+                                                    <div className="flex-1">
+                                                        <div className="text-sm text-gray-400">{item.timestamp}</div>
+                                                        <div className="text-xs text-gray-500 mt-1">{item.product}</div>
+                                                    </div>
+                                                    <div className="font-bold" style={{ color: getPriceColor(item.price || 0) }}>
+                                                        {(item.price || 0).toLocaleString()}원
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <div className="mt-6">
+                                <button
+                                    onClick={() => setShowSearchResultModal(false)}
+                                    className="w-full glass-effect hover:border-gray-400 rounded-lg py-3 font-semibold transition-all text-white"
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
 
             return (
                 <div className="min-h-screen bg-gradient-to-br text-gray-100 p-4">
                     <div className="max-w-7xl mx-auto">
                         {/* 매출 입력 모달 */}
                         {showAddSaleModal && <AddSaleModal />}
+                        {/* 검색 결과 모달 */}
+                        {showSearchResultModal && <SearchResultModal />}
                         {/* 헤더 */}
                         <div className="text-center mb-8 sm:mb-10">
                             <h1 className="text-3xl sm:text-5xl font-black mb-2 sm:mb-3" style={{ color: '#00FF88' }}>
                                 NeoFit PayCalc
                             </h1>
                             <p className="text-gray-400 text-base sm:text-lg">네오핏 급여 계산기</p>
+                        </div>
+                        
+                        {/* 회원 검색 */}
+                        <div className="mb-6 flex justify-center">
+                            <div className="flex gap-2" style={{ maxWidth: '400px', width: '100%' }}>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && searchCustomer()}
+                                    placeholder="회원명을 검색하세요"
+                                    className="flex-1 glass-effect rounded-lg px-4 py-3 focus:border-green-400 focus:outline-none"
+                                />
+                                <button
+                                    onClick={searchCustomer}
+                                    className="glass-effect border-green-500 hover:border-green-400 rounded-lg px-6 py-3 font-semibold transition-all hover:shadow-lg text-white"
+                                >
+                                    <Icon icon="search" size={20} />
+                                </button>
+                            </div>
                         </div>
 
                         {/* 뷰 모드 선택 */}
@@ -989,19 +1335,28 @@
                                         {viewMode === 'daily' ? '일별 매출 현황' : viewMode === 'weekly' ? '주별 매출 현황' : '월별 매출 현황'}
                                     </h2>
                                     {viewMode === 'daily' && (
-                                        <div className="relative group">
+                                        <div className="flex gap-2">
                                             <button
-                                                onClick={() => {
-                                                    const today = new Date();
-                                                    const day = today.getMonth() === selectedMonth && today.getFullYear() === selectedYear ? today.getDate() : 1;
-                                                    openAddSaleModal(day);
-                                                }}
-                                                className="glass-effect rounded-full p-3 border-blue-500 hover:border-blue-400 transition-all hover:shadow-lg"
+                                                onClick={scrollToToday}
+                                                className="glass-effect rounded-full p-3 border-green-500 hover:border-green-400 transition-all hover:shadow-lg"
+                                                title="오늘로 이동"
                                             >
+                                                <Icon icon={Calendar} size={20} style={{ color: '#00FF88' }} />
+                                            </button>
+                                            <div className="relative group">
+                                                <button
+                                                    onClick={() => {
+                                                        const today = new Date();
+                                                        const day = today.getMonth() === selectedMonth && today.getFullYear() === selectedYear ? today.getDate() : 1;
+                                                        openAddSaleModal(day);
+                                                    }}
+                                                    className="glass-effect rounded-full p-3 border-blue-500 hover:border-blue-400 transition-all hover:shadow-lg"
+                                                >
                                                 <Icon icon={Plus} size={24} style={{ color: 'white' }} />
                                             </button>
                                             <div className="absolute right-0 top-full mt-2 bg-gray-800 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                                                 오늘 매출 입력하기
+                                            </div>
                                             </div>
                                         </div>
                                     )}
@@ -1049,39 +1404,72 @@
 
                                                 {/* 매출 상세 내역 */}
                                                 {dayData.details && dayData.details.length > 0 && (
-                                                    <div className="space-y-2 mb-4">
-                                                        <div className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                                                            <Icon icon={DollarSign} size={16} />
-                                                            매출 내역
+                                                    <div className="mb-4">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <div className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                                                                <Icon icon={DollarSign} size={16} />
+                                                                매출 내역 ({dayData.details.length}건)
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-xs">
+                                                                <span className="flex items-center gap-1">
+                                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#95E1D3' }}></span>
+                                                                    <span className="text-gray-500">~10만</span>
+                                                                </span>
+                                                                <span className="flex items-center gap-1">
+                                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#4ECDC4' }}></span>
+                                                                    <span className="text-gray-500">10만~</span>
+                                                                </span>
+                                                                <span className="flex items-center gap-1">
+                                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#6BCF7F' }}></span>
+                                                                    <span className="text-gray-500">30만~</span>
+                                                                </span>
+                                                                <span className="flex items-center gap-1">
+                                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FFD93D' }}></span>
+                                                                    <span className="text-gray-500">50만~</span>
+                                                                </span>
+                                                                <span className="flex items-center gap-1">
+                                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FF6B6B' }}></span>
+                                                                    <span className="text-gray-500">100만~</span>
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <div className="max-h-40 overflow-y-auto space-y-2">
-                                                            {dayData.details.map(detail => (
-                                                                <div key={detail.id} className="glass-effect rounded-xl p-3 text-sm hover:scale-[1.02] transition-all">
-                                                                    <div className="flex justify-between items-start">
-                                                                        <div className="flex-1">
-                                                                            <div className="font-semibold text-white flex items-center gap-2">
-                                                                                <Icon icon={User} size={14} />
-                                                                                {detail.customerName}
+                                                        <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                                            {dayData.details.map((detail, index) => (
+                                                                <div key={detail.id} className="relative">
+                                                                    <div className="glass-effect rounded-xl p-4 hover:scale-[1.01] transition-all border border-gray-700/50 hover:border-green-500/30">
+                                                                        <div className="flex justify-between items-start gap-3">
+                                                                            <div className="flex-1">
+                                                                                <div className="flex items-start justify-between mb-2">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                                                                                            <span className="text-xs font-bold text-green-400">{index + 1}</span>
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <div className="font-semibold text-white text-sm">
+                                                                                                {detail.customerName}
+                                                                                            </div>
+                                                                                            <div className="text-gray-500 text-xs">
+                                                                                                {detail.timestamp}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="font-bold text-lg" style={{ color: getPriceColor(detail.price || 0) }}>
+                                                                                        {(detail.price || 0).toLocaleString()}원
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="bg-gray-800/50 rounded-lg px-3 py-2 text-xs text-gray-300">
+                                                                                    {detail.product}
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="text-gray-400 text-xs mt-1 ml-5">
-                                                                                {detail.product}
-                                                                            </div>
-                                                                            <div className="text-green-400 font-bold mt-2 text-lg flex items-center gap-1">
-                                                                                <Icon icon={DollarSign} size={16} style={{ marginTop: '2px' }} />
-                                                                                {(detail.price || 0).toLocaleString()}원
-                                                                            </div>
-                                                                            <div className="text-gray-500 text-xs mt-1">
-                                                                                {detail.timestamp}
-                                                                            </div>
+                                                                            {!dayData.approved && (
+                                                                                <button
+                                                                                    onClick={() => removeSaleDetail(day, detail.id)}
+                                                                                    className="text-red-400 hover:text-red-300 p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-all"
+                                                                                >
+                                                                                    <Icon icon={Trash2} size={16} />
+                                                                                </button>
+                                                                            )}
                                                                         </div>
-                                                                        {!dayData.approved && (
-                                                                            <button
-                                                                                onClick={() => removeSaleDetail(day, detail.id)}
-                                                                                className="text-red-400 hover:text-red-300 ml-3 p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-all"
-                                                                            >
-                                                                                <Icon icon={Trash2} size={16} />
-                                                                            </button>
-                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -1373,11 +1761,11 @@
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-xs text-center">
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">2,500만원 미만</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF6B6B' }}>{employeeType === 'full' ? '5%' : '2.5%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF6B6B' }}>{employeeType === 'full' ? '4%' : '2%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">2,500만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF9F40' }}>{employeeType === 'full' ? '5.5%' : '2.75%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF9F40' }}>{employeeType === 'full' ? '5%' : '2.5%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">3,000만원 이상</p>
@@ -1385,23 +1773,23 @@
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">3,500만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#6BCF7F' }}>{employeeType === 'full' ? '6.5%' : '3.25%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#6BCF7F' }}>{employeeType === 'full' ? '7%' : '3.5%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">4,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#4ECDC4' }}>{employeeType === 'full' ? '7%' : '3.5%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#4ECDC4' }}>{employeeType === 'full' ? '8%' : '4%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">4,500만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#45B7D1' }}>{employeeType === 'full' ? '7.5%' : '3.75%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#45B7D1' }}>{employeeType === 'full' ? '9%' : '4.5%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">5,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#5D5FEF' }}>{employeeType === 'full' ? '8%' : '4%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#5D5FEF' }}>{employeeType === 'full' ? '10%' : '5%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">6,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#A55FEB' }}>{employeeType === 'full' ? '10%' : '5%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#A55FEB' }}>{employeeType === 'full' ? '12%' : '6%'}</p>
                                         </div>
                                     </div>
                                     
