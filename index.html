@@ -8,74 +8,6 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
-    
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { 
-            getAuth, 
-            signInWithEmailAndPassword,
-            onAuthStateChanged,
-            signOut
-        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { 
-            getFirestore,
-            collection,
-            doc,
-            setDoc,
-            getDoc,
-            getDocs,
-            query,
-            where,
-            orderBy,
-            onSnapshot,
-            deleteDoc,
-            updateDoc,
-            serverTimestamp,
-            writeBatch
-        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-        // Firebase 설정
-        const firebaseConfig = {
-            apiKey: "AIzaSyC9Nqji4jQe8po0BFfMo8czGSkXLuI2H3U",
-            authDomain: "neofit-paycalc.firebaseapp.com",
-            projectId: "neofit-paycalc",
-            storageBucket: "neofit-paycalc.firebasestorage.app",
-            messagingSenderId: "1072136228278",
-            appId: "1:1072136228278:web:5d3be856d357b273900517",
-            measurementId: "G-YWWC4R2EP4"
-        };
-
-        // Firebase 초기화
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // 전역으로 사용할 수 있도록 window 객체에 할당
-        window.firebase = {
-            auth,
-            db,
-            // Auth 함수들
-            signInWithEmailAndPassword,
-            onAuthStateChanged,
-            signOut,
-            // Firestore 함수들
-            collection,
-            doc,
-            setDoc,
-            getDoc,
-            getDocs,
-            query,
-            where,
-            orderBy,
-            onSnapshot,
-            deleteDoc,
-            updateDoc,
-            serverTimestamp,
-            writeBatch
-        };
-    </script>
-    
     <style>
         * {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
@@ -117,6 +49,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
 
+
         .gradient-border {
             position: relative;
             background: transparent;
@@ -130,345 +63,135 @@
         }
 
         ::-webkit-scrollbar {
-            width: 12px;
+            width: 8px;
         }
 
         ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            background: #1f2937;
+            border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
+            background: linear-gradient(to bottom, #00FF88, #00C66E);
+            border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
+            background: linear-gradient(to bottom, #00FF88, #00FF88);
         }
-
-        /* 로그인 화면 스타일 */
-        .login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-            padding: 1rem;
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
         }
-
-        .login-box {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border-radius: 1.5rem;
-            padding: 3rem;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(31, 41, 55, 0.5);
+            border-radius: 3px;
         }
-
-        .login-title {
-            font-size: 2.5rem;
-            font-weight: bold;
-            text-align: center;
-            background: linear-gradient(135deg, #00FF88 0%, #00CC6A 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 2rem;
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 136, 0.5);
+            border-radius: 3px;
         }
-
-        .login-input {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0.75rem;
-            color: white;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .login-input:focus {
-            outline: none;
-            border-color: #00FF88;
-            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
-        }
-
-        .login-button {
-            width: 100%;
-            padding: 1rem;
-            background: linear-gradient(135deg, #00FF88 0%, #00CC6A 100%);
-            border: none;
-            border-radius: 0.75rem;
-            color: #0f0f0f;
-            font-size: 1.125rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
-        }
-
-        .login-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0, 255, 136, 0.3);
-        }
-
-        .login-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #ef4444;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            font-size: 0.875rem;
-            text-align: center;
-        }
-
-        /* 로딩 스피너 */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #00FF88;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* 상단 바 스타일 */
-        .top-bar {
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.875rem;
-        }
-
-        .logout-button {
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0.5rem;
-            color: white;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .logout-button:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* 동기화 상태 표시 */
-        .sync-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            border-radius: 0.5rem;
-            color: #00FF88;
-            font-size: 0.875rem;
-        }
-
-        .sync-icon {
-            width: 12px;
-            height: 12px;
-            background: #00FF88;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 136, 0.8);
         }
 
         @keyframes pulse {
-            0% { opacity: 1; }
+            0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
-            100% { opacity: 1; }
         }
 
-        /* 반응형 수정 */
-        @media (max-width: 768px) {
-            .login-box {
-                padding: 2rem;
-            }
-
-            .login-title {
-                font-size: 2rem;
-            }
-
-            .top-bar {
-                padding: 1rem;
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .user-info {
-                font-size: 0.75rem;
-            }
-        }
-
-        /* 기존 스타일들 추가 */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         @keyframes slideIn {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-out;
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .slide-in {
             animation: slideIn 0.3s ease-out;
         }
-
-        .bounce {
-            animation: bounce 2s infinite;
-        }
-
-        /* 주요 UI 요소 스타일 */
-        .main-container {
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-            min-height: 100vh;
-            color: white;
-        }
-
-        .content-wrapper {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        /* 버튼 스타일 */
-        .btn-primary {
-            background: linear-gradient(135deg, #00FF88 0%, #00CC6A 100%);
-            color: #0f0f0f;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0, 255, 136, 0.3);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* 카드 스타일 */
-        .card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-        }
-
-        /* 모달 스타일 */
-        .modal-backdrop {
+        
+        .fixed {
             position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 1rem;
+        }
+        
+        .inset-0 {
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+        
+        .z-50 {
+            z-index: 50;
         }
 
-        .modal-content {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1.5rem;
-            padding: 2rem;
-            max-width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        /* Tailwind-like utility classes */
+        .min-h-screen { min-height: 100vh; }
+        .bg-gradient-to-br { 
+            background: #0a0e1a;
+            background-attachment: fixed;
         }
-
-        /* Tailwind-like utilities */
+        .text-gray-100 { color: #f3f4f6; }
+        .text-gray-400 { color: #9ca3af; }
+        .text-gray-300 { color: #d1d5db; }
+        .text-gray-500 { color: #6b7280; }
+        .text-white { color: #ffffff; }
+        .text-pink-400 { color: #f472b6; }
+        .text-green-400 { color: #4ade80; }
+        .text-red-400 { color: #f87171; }
+        .text-red-300 { color: #fca5a5; }
+        .p-4 { padding: 1rem; }
+        .p-2 { padding: 0.5rem; }
+        .p-3 { padding: 0.75rem; }
+        .p-5 { padding: 1.25rem; }
+        .p-6 { padding: 1.5rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .px-8 { padding-left: 2rem; padding-right: 2rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mb-10 { margin-bottom: 2.5rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .ml-3 { margin-left: 0.75rem; }
+        .ml-5 { margin-left: 1.25rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .max-w-7xl { max-width: 80rem; }
         .text-center { text-align: center; }
-        .text-sm { font-size: 0.875rem; }
         .text-xs { font-size: 0.75rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-base { font-size: 1rem; }
         .text-lg { font-size: 1.125rem; }
         .text-xl { font-size: 1.25rem; }
         .text-2xl { font-size: 1.5rem; }
         .text-3xl { font-size: 1.875rem; }
-        .text-4xl { font-size: 2.25rem; }
         .text-5xl { font-size: 3rem; }
-        .font-bold { font-weight: 700; }
         .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
         .font-black { font-weight: 900; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mb-6 { margin-bottom: 1.5rem; }
-        .mb-8 { margin-bottom: 2rem; }
-        .mt-2 { margin-top: 0.5rem; }
-        .mt-4 { margin-top: 1rem; }
-        .mt-6 { margin-top: 1.5rem; }
-        .mt-8 { margin-top: 2rem; }
-        .p-2 { padding: 0.5rem; }
-        .p-4 { padding: 1rem; }
-        .p-5 { padding: 1.25rem; }
-        .p-6 { padding: 1.5rem; }
-        .p-8 { padding: 2rem; }
-        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-        .px-4 { padding-left: 1rem; padding-right: 1rem; }
-        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
-        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .rounded { border-radius: 0.25rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .rounded-full { border-radius: 9999px; }
+        .flex { display: flex; }
+        .grid { display: grid; }
+        .gap-1 { gap: 0.25rem; }
         .gap-2 { gap: 0.5rem; }
         .gap-3 { gap: 0.75rem; }
         .gap-4 { gap: 1rem; }
@@ -476,219 +199,200 @@
         .space-y-2 > * + * { margin-top: 0.5rem; }
         .space-y-3 > * + * { margin-top: 0.75rem; }
         .space-y-4 > * + * { margin-top: 1rem; }
-        .rounded { border-radius: 0.25rem; }
-        .rounded-lg { border-radius: 0.5rem; }
-        .rounded-xl { border-radius: 0.75rem; }
-        .rounded-2xl { border-radius: 1rem; }
-        .rounded-full { border-radius: 9999px; }
-        .w-full { width: 100%; }
-        .flex { display: flex; }
-        .grid { display: grid; }
-        .hidden { display: none; }
         .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
         .justify-center { justify-content: center; }
         .justify-between { justify-content: space-between; }
         .flex-col { flex-direction: column; }
-        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
-        .scale-105 { transform: scale(1.05); }
+        .flex-wrap { flex-wrap: wrap; }
+        .flex-1 { flex: 1 1 0%; }
+        .w-full { width: 100%; }
+        .max-h-40 { max-height: 10rem; }
+        .overflow-y-auto { overflow-y: auto; }
+        .overflow-x-hidden { overflow-x: hidden; }
+        .bg-gray-800 { background-color: rgba(31, 41, 55, 0.7); }
+        .bg-gray-700 { background-color: rgba(55, 65, 81, 0.7); }
+        .bg-gray-800\/50 { background-color: rgba(31, 41, 55, 0.5); }
+        .bg-green-500\/20 { background-color: rgba(34, 197, 94, 0.2); }
+        .bg-blue-500\/20 { background-color: rgba(59, 130, 246, 0.2); }
+        .bg-pink-500\/20 { background-color: rgba(236, 72, 153, 0.2); }
+        .bg-red-500\/10 { background-color: rgba(239, 68, 68, 0.1); }
+        .bg-red-500\/20 { background-color: rgba(239, 68, 68, 0.2); }
+        .bg-gradient-to-r { background: linear-gradient(to right, var(--tw-gradient-stops)); }
+        .from-green-500 { --tw-gradient-from: #22c55e; }
+        .from-green-600 { --tw-gradient-from: #16a34a; }
+        .from-green-700 { --tw-gradient-from: #15803d; }
+        .from-blue-600 { --tw-gradient-from: #2563eb; }
+        .from-blue-700 { --tw-gradient-from: #1d4ed8; }
+        .from-orange-600 { --tw-gradient-from: #ea580c; }
+        .from-orange-700 { --tw-gradient-from: #c2410c; }
+        .to-green-600 { --tw-gradient-to: #16a34a; }
+        .to-green-700 { --tw-gradient-to: #15803d; }
+        .to-blue-700 { --tw-gradient-to: #1d4ed8; }
+        .to-orange-700 { --tw-gradient-to: #c2410c; }
+        .from-green-500\/10 { --tw-gradient-from: rgba(34, 197, 94, 0.1); }
+        .to-blue-500\/10 { --tw-gradient-to: rgba(59, 130, 246, 0.1); }
+        .hover\:from-green-500:hover { --tw-gradient-from: #22c55e; }
+        .hover\:from-blue-500:hover { --tw-gradient-from: #2563eb; }
+        .hover\:from-orange-500:hover { --tw-gradient-from: #f97316; }
+        .hover\:to-green-600:hover { --tw-gradient-to: #16a34a; }
+        .hover\:to-blue-600:hover { --tw-gradient-to: #2563eb; }
+        .hover\:to-orange-600:hover { --tw-gradient-to: #ea580c; }
+        .hover\:bg-gray-700:hover { background-color: #374151; }
+        .hover\:bg-red-500\/20:hover { background-color: rgba(239, 68, 68, 0.2); }
+        .hover\:text-red-300:hover { color: #fca5a5; }
         .hover\:scale-105:hover { transform: scale(1.05); }
-        .cursor-pointer { cursor: pointer; }
-        .opacity-70 { opacity: 0.7; }
+        .hover\:scale-\[1\.02\]:hover { transform: scale(1.02); }
+        .scale-105 { transform: scale(1.05); }
+        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+        .transition-transform { transition-property: transform; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+        .duration-300 { transition-duration: 300ms; }
+        .opacity-30 { opacity: 0.3; }
         .opacity-80 { opacity: 0.8; }
-        .text-white { color: white; }
-        .text-gray-300 { color: rgb(209 213 219); }
-        .text-gray-400 { color: rgb(156 163 175); }
-        .text-gray-500 { color: rgb(107 114 128); }
-        .text-green-400 { color: rgb(74 222 128); }
-        .text-blue-400 { color: rgb(96 165 250); }
-        .text-orange-400 { color: rgb(251 146 60); }
-        .bg-gray-800\/50 { background-color: rgb(31 41 55 / 0.5); }
-        .border { border-width: 1px; }
-        .border-b { border-bottom-width: 1px; }
-        .border-gray-400 { border-color: rgb(156 163 175); }
-        .border-gray-600 { border-color: rgb(75 85 99); }
-        .border-gray-700 { border-color: rgb(55 65 81); }
-        .border-green-400 { border-color: rgb(74 222 128); }
-        .border-green-500 { border-color: rgb(34 197 94); }
-        .border-blue-500 { border-color: rgb(59 130 246); }
-        .border-orange-500 { border-color: rgb(249 115 22); }
-        .shadow-lg { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
-
-        /* Grid layouts */
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .hover\:shadow-xl:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .cursor-default { cursor: default; }
+        .cursor-pointer { cursor: pointer; }
+        .whitespace-nowrap { white-space: nowrap; }
+        .transform { transform: translateX(var(--tw-translate-x)) translateY(var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+        .rotate-180 { --tw-rotate: 180deg; }
+        .block { display: block; }
+        .focus\:outline-none:focus { outline: 2px solid transparent; outline-offset: 2px; }
+        .focus\:border-green-400:focus { border-color: #4ade80; }
+        .focus\:border-orange-400:focus { border-color: #fb923c; }
+        .border-pink-500\/30 { border-color: rgba(236, 72, 153, 0.3); }
         .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
         .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-
         @media (min-width: 640px) {
-            .sm\:px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-            .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
-            .sm\:w-32 { width: 8rem; }
-            .sm\:w-36 { width: 9rem; }
-            .sm\:text-base { font-size: 1rem; }
-            .sm\:text-sm { font-size: 0.875rem; }
-            .sm\:text-lg { font-size: 1.125rem; }
-            .sm\:text-3xl { font-size: 1.875rem; }
+            .sm\:mb-3 { margin-bottom: 0.75rem; }
+            .sm\:mb-4 { margin-bottom: 1rem; }
+            .sm\:mb-8 { margin-bottom: 2rem; }
+            .sm\:mb-10 { margin-bottom: 2.5rem; }
             .sm\:p-3 { padding: 0.75rem; }
+            .sm\:p-4 { padding: 1rem; }
+            .sm\:p-5 { padding: 1.25rem; }
             .sm\:p-6 { padding: 1.5rem; }
+            .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+            .sm\:px-8 { padding-left: 2rem; padding-right: 2rem; }
             .sm\:gap-3 { gap: 0.75rem; }
             .sm\:gap-6 { gap: 1.5rem; }
-            .sm\:mb-3 { margin-bottom: 0.75rem; }
-            .sm\:mb-8 { margin-bottom: 2rem; }
-            .sm\:inline { display: inline; }
+            .sm\:text-sm { font-size: 0.875rem; }
+            .sm\:text-base { font-size: 1rem; }
+            .sm\:text-lg { font-size: 1.125rem; }
+            .sm\:text-2xl { font-size: 1.5rem; }
+            .sm\:text-3xl { font-size: 1.875rem; }
+            .sm\:text-5xl { font-size: 3rem; }
+            .sm\:flex-row { flex-direction: row; }
+            .sm\:flex-initial { flex: 0 1 auto; }
+            .sm\:w-auto { width: auto; }
         }
-
         @media (min-width: 768px) {
             .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         }
-
         @media (min-width: 1024px) {
             .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         }
-
-        /* Custom scrollbar */
-        .overflow-y-auto {
-            overflow-y: auto;
+        select, input {
+            background-color: transparent;
+            color: #f3f4f6;
         }
-
-        .whitespace-nowrap {
-            white-space: nowrap;
+        select option {
+            background-color: #1f2937;
+            color: #f3f4f6;
         }
-
-        /* Focus states */
-        .focus\:border-green-400:focus {
-            border-color: rgb(74 222 128);
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
         }
-
-        .focus\:border-blue-500:focus {
-            border-color: rgb(59 130 246);
+        .max-h-\[650px\] { max-height: 650px; }
+        .bg-gradient-to-br.from-gray-800\/50.to-gray-900\/50 {
+            background: linear-gradient(to bottom right, rgba(31, 41, 55, 0.5), rgba(17, 24, 39, 0.5));
         }
-
-        .focus\:border-orange-400:focus {
-            border-color: rgb(251 146 60);
-        }
-
-        .focus\:outline-none:focus {
-            outline: 2px solid transparent;
-            outline-offset: 2px;
-        }
-
-        /* Hover states */
-        .hover\:border-gray-400:hover {
-            border-color: rgb(156 163 175);
-        }
-
-        .hover\:border-green-400:hover {
-            border-color: rgb(74 222 128);
-        }
-
-        .hover\:border-blue-400:hover {
-            border-color: rgb(59 130 246);
-        }
-
-        .hover\:border-orange-400:hover {
-            border-color: rgb(251 146 60);
-        }
-
-        .hover\:shadow-lg:hover {
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-
-        .hover\:text-white:hover {
-            color: white;
-        }
-
-        .hover\:scale-\[1\.02\]:hover {
-            transform: scale(1.02);
-        }
+        .group { position: relative; }
+        .group:hover .group-hover\:opacity-100 { opacity: 1; }
+        .pointer-events-none { pointer-events: none; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .top-full { top: 100%; }
+        .right-0 { right: 0; }
+        .mt-2 { margin-top: 0.5rem; }
+        .opacity-0 { opacity: 0; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const useState = React.useState;
+        const useRef = React.useRef;
+        const Calendar = "calendar";
+        const DollarSign = "dollar-sign";
+        const Check = "check";
+        const TrendingUp = "trending-up";
+        const Edit = "edit";
+        const Plus = "plus";
+        const Trash2 = "trash-2";
+        const User = "user";
+        const Package = "package";
+        const CreditCard = "credit-card";
 
-        // 로그인 컴포넌트
-        const LoginComponent = ({ onLogin }) => {
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
-            const [loading, setLoading] = useState(false);
-
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                setError('');
-                setLoading(true);
-
-                try {
-                    const userCredential = await window.firebase.signInWithEmailAndPassword(
-                        window.firebase.auth, 
-                        email, 
-                        password
-                    );
-                    onLogin(userCredential.user);
-                } catch (err) {
-                    console.error('Login error:', err);
-                    let errorMessage = '로그인에 실패했습니다.';
-                    
-                    if (err.code === 'auth/user-not-found') {
-                        errorMessage = '등록되지 않은 이메일입니다.';
-                    } else if (err.code === 'auth/wrong-password') {
-                        errorMessage = '비밀번호가 올바르지 않습니다.';
-                    } else if (err.code === 'auth/invalid-email') {
-                        errorMessage = '올바른 이메일 형식이 아닙니다.';
-                    }
-                    
-                    setError(errorMessage);
-                } finally {
-                    setLoading(false);
+        // 환경 변수 또는 설정
+        const CONFIG = {
+            ADMIN_PASSWORD: '4405', // 관리자 비밀번호
+            INCENTIVE_RATES: {
+                full: {
+                    60000000: 12,
+                    50000000: 10,
+                    45000000: 9,
+                    40000000: 8,
+                    35000000: 7,
+                    30000000: 6,
+                    25000000: 5,
+                    0: 4
+                },
+                part: {
+                    60000000: 6,
+                    50000000: 5,
+                    45000000: 4.5,
+                    40000000: 4,
+                    35000000: 3.5,
+                    30000000: 3,
+                    25000000: 2.5,
+                    0: 2
                 }
-            };
-
-            return (
-                <div className="login-container">
-                    <div className="login-box">
-                        <h1 className="login-title">NeoFit PayCalc</h1>
-                        <p style={{textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '2rem'}}>
-                            네오핏 급여 계산기
-                        </p>
-                        
-                        {error && <div className="login-error">{error}</div>}
-                        
-                        <form onSubmit={handleLogin}>
-                            <input
-                                type="email"
-                                className="login-input"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="이메일"
-                                required
-                                autoComplete="email"
-                            />
-                            <input
-                                type="password"
-                                className="login-input"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="비밀번호"
-                                required
-                                autoComplete="current-password"
-                            />
-                            <button type="submit" className="login-button" disabled={loading}>
-                                {loading ? <span className="loading-spinner"></span> : '로그인'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            );
+            }
         };
 
-        // 메인 앱 컴포넌트
-        const NeoFitPayCalc = ({ user }) => {
-            const [salesData, setSalesData] = useState({});
+        const NeoFitPayCalc = () => {
+            const [salesData, setSalesData] = useState(() => {
+                try {
+                    // localStorage 먼저 확인
+                    const localSaved = localStorage.getItem('neofitSalesData');
+                    if (localSaved) {
+                        return JSON.parse(localSaved);
+                    }
+                    
+                    // sessionStorage 확인 (fallback)
+                    const sessionSaved = sessionStorage.getItem('neofitSalesData');
+                    if (sessionSaved) {
+                        return JSON.parse(sessionSaved);
+                    }
+                    
+                    // window.localStorage 확인 (iOS 대응)
+                    if (window.localStorage) {
+                        const windowSaved = window.localStorage.getItem('neofitSalesData');
+                        if (windowSaved) {
+                            return JSON.parse(windowSaved);
+                        }
+                    }
+                } catch (e) {
+                    console.error('데이터 로드 실패:', e);
+                }
+                
+                return {};
+            });
             const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
             const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
             const [approvalPasswords, setApprovalPasswords] = useState({});
@@ -700,145 +404,34 @@
             const [expandedDays, setExpandedDays] = useState({});
             const [showAddSaleModal, setShowAddSaleModal] = useState(false);
             const [selectedModalDay, setSelectedModalDay] = useState(null);
-            const [viewMode, setViewMode] = useState('daily');
+            const [viewMode, setViewMode] = useState('daily'); // 'daily', 'weekly', 'monthly'
             const dailyViewRef = React.useRef(null);
             const [searchQuery, setSearchQuery] = useState('');
             const [showSearchResultModal, setShowSearchResultModal] = useState(false);
             const [searchResults, setSearchResults] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const [syncing, setSyncing] = useState(false);
-            const [unsubscribe, setUnsubscribe] = useState(null);
-
-            // Firebase 관련 함수들
-            useEffect(() => {
-                loadFirestoreData();
-                
-                return () => {
-                    if (unsubscribe) {
-                        unsubscribe();
-                    }
-                };
-            }, [selectedMonth, selectedYear]);
-
-            const loadFirestoreData = async () => {
-                setLoading(true);
-                
+            
+            // localStorage에 데이터 저장 (모바일 대응 강화)
+            React.useEffect(() => {
                 try {
-                    const startDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
-                    const endDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-31`;
+                    // localStorage 저장
+                    localStorage.setItem('neofitSalesData', JSON.stringify(salesData));
                     
-                    const q = window.firebase.query(
-                        window.firebase.collection(window.firebase.db, 'sales'),
-                        window.firebase.where('date', '>=', startDate),
-                        window.firebase.where('date', '<=', endDate),
-                        window.firebase.orderBy('date', 'asc')
-                    );
-
-                    const unsub = window.firebase.onSnapshot(q, (snapshot) => {
-                        const data = {};
-                        snapshot.forEach((doc) => {
-                            const docData = doc.data();
-                            data[docData.date] = {
-                                ...docData,
-                                id: doc.id,
-                                details: docData.details || []
-                            };
-                        });
-                        setSalesData(data);
-                        setLoading(false);
-                    });
-
-                    setUnsubscribe(() => unsub);
-                } catch (error) {
-                    console.error('데이터 로드 실패:', error);
-                    setLoading(false);
-                }
-            };
-
-            const saveSaleToFirestore = async (dateKey, saleData) => {
-                setSyncing(true);
-                try {
-                    const docId = saleData.id || `${dateKey}-${Date.now()}`;
-                    const docRef = window.firebase.doc(window.firebase.db, 'sales', docId);
+                    // sessionStorage에도 백업
+                    sessionStorage.setItem('neofitSalesData', JSON.stringify(salesData));
                     
-                    await window.firebase.setDoc(docRef, {
-                        ...saleData,
-                        date: dateKey,
-                        createdAt: saleData.createdAt || window.firebase.serverTimestamp(),
-                        createdBy: saleData.createdBy || user.email,
-                        modifiedAt: window.firebase.serverTimestamp(),
-                        modifiedBy: user.email
-                    });
-                } catch (error) {
-                    console.error('저장 실패:', error);
-                    alert('데이터 저장에 실패했습니다.');
-                } finally {
-                    setSyncing(false);
-                }
-            };
-
-            const updateSaleInFirestore = async (docId, updateData) => {
-                setSyncing(true);
-                try {
-                    const docRef = window.firebase.doc(window.firebase.db, 'sales', docId);
-                    await window.firebase.updateDoc(docRef, {
-                        ...updateData,
-                        modifiedAt: window.firebase.serverTimestamp(),
-                        modifiedBy: user.email
-                    });
-                } catch (error) {
-                    console.error('업데이트 실패:', error);
-                    alert('데이터 업데이트에 실패했습니다.');
-                } finally {
-                    setSyncing(false);
-                }
-            };
-
-            const deleteSaleFromFirestore = async (docId) => {
-                setSyncing(true);
-                try {
-                    await window.firebase.deleteDoc(
-                        window.firebase.doc(window.firebase.db, 'sales', docId)
-                    );
-                } catch (error) {
-                    console.error('삭제 실패:', error);
-                    alert('데이터 삭제에 실패했습니다.');
-                } finally {
-                    setSyncing(false);
-                }
-            };
-
-            // 환경 변수
-            const CONFIG = {
-                ADMIN_PASSWORD: 'admin123',
-                INCENTIVE_RATES: {
-                    full: {
-                        60000000: 12,
-                        50000000: 10,
-                        45000000: 9,
-                        40000000: 8,
-                        35000000: 7,
-                        30000000: 6,
-                        25000000: 5,
-                        0: 4
-                    },
-                    part: {
-                        60000000: 6,
-                        50000000: 5,
-                        45000000: 4.5,
-                        40000000: 4,
-                        35000000: 3.5,
-                        30000000: 3,
-                        25000000: 2.5,
-                        0: 2
+                    // iOS Safari Private Mode 대응
+                    if (window.localStorage) {
+                        window.localStorage.setItem('neofitSalesData', JSON.stringify(salesData));
                     }
+                } catch (e) {
+                    console.error('데이터 저장 실패:', e);
                 }
-            };
+            }, [salesData]);
 
             // 상품 목록
             const healthProducts = ['1개월', '3개월', '6개월', '12개월'];
-            const pilatesProducts = ['3개월 (24회 주 2회)', '6개월 (48회 주 2회)', '3개월 (36회 주 3회)', '6개월 (72회 주 3회)'];
-            const neofitProducts = ['3개월', '6개월', '12개월'];
+            const pilatesProducts = ['3개월 (24회 주 2회)', '6개월 (48회 주 2회)', '12개월 (96회 주 2회)'];
+            const neofitProducts = ['1개월', '3개월', '6개월', '12개월'];
             const lockerProducts = ['운동복', '락커'];
             const lockerPeriods = ['1개월', '2개월', '3개월', '4개월', '5개월', '6개월', '7개월', '8개월', '9개월', '10개월', '11개월', '12개월'];
             
@@ -846,17 +439,12 @@
             const productPrices = {
                 '1개월': 110000,
                 '3개월': 270000,
-                '6개월': 480000,
-                '12개월': 900000,
+                '6개월': 420000,
+                '12개월': 600000,
                 '3개월 (24회 주 2회)': 384000,
-                '6개월 (48회 주 2회)': 672000,
-                '3개월 (36회 주 3회)': 576000,
-                '6개월 (72회 주 3회)': 1008000,
-                // 네오핏 가격
-                '네오핏 3개월': 300000,
-                '네오핏 6개월': 500000,
-                '네오핏 12개월': 800000,
-                // 운동복/락커 가격
+                '6개월 (48회 주 2회)': 624000,
+                '12개월 (96회 주 2회)': 960000,
+                // 운동복/락커 가격 (1개월부터 12개월까지)
                 '운동복 1개월': 10000,
                 '운동복 2개월': 20000,
                 '운동복 3개월': 30000,
@@ -903,7 +491,7 @@
             };
 
             // 매출 상세 내역 추가
-            const addSaleDetail = async (day) => {
+            const addSaleDetail = (day) => {
                 const dayCustomerName = customerName[day] || '';
                 const daySelectedProduct = selectedProducts[day] || '';
                 const dayCustomPrice = customPrices[day] || 0;
@@ -926,20 +514,22 @@
                     })
                 };
 
-                const currentData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
-                const newDetails = [...(currentData.details || []), newDetail];
-                const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
+                setSalesData(prev => {
+                    const currentData = prev[dateKey] || { amount: 0, approved: false, details: [] };
+                    const newDetails = [...(currentData.details || []), newDetail];
+                    const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
 
-                const updatedData = {
-                    ...currentData,
-                    details: newDetails,
-                    amount: newTotalAmount
-                };
+                    return {
+                        ...prev,
+                        [dateKey]: {
+                            ...currentData,
+                            details: newDetails,
+                            amount: newTotalAmount
+                        }
+                    };
+                });
 
-                // Firebase에 저장
-                await saveSaleToFirestore(dateKey, updatedData);
-
-                // 입력 필드 초기화
+                // 해당 날짜 입력 필드 초기화
                 setCustomerName(prev => ({ ...prev, [day]: '' }));
                 setSelectedProducts(prev => ({ ...prev, [day]: '' }));
                 setCustomPrices(prev => ({ ...prev, [day]: '' }));
@@ -948,36 +538,37 @@
             };
 
             // 매출 상세 삭제
-            const removeSaleDetail = async (day, detailId) => {
+            const removeSaleDetail = (day, detailId) => {
                 const dateKey = getDateKey(day);
-                const currentData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
-                const newDetails = currentData.details.filter(detail => detail.id !== detailId);
-                const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
+                setSalesData(prev => {
+                    const currentData = prev[dateKey] || { amount: 0, approved: false, details: [] };
+                    const newDetails = currentData.details.filter(detail => detail.id !== detailId);
+                    const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
 
-                const updatedData = {
-                    ...currentData,
-                    details: newDetails,
-                    amount: newTotalAmount
-                };
-
-                if (currentData.id) {
-                    await updateSaleInFirestore(currentData.id, updatedData);
-                }
+                    return {
+                        ...prev,
+                        [dateKey]: {
+                            ...currentData,
+                            details: newDetails,
+                            amount: newTotalAmount
+                        }
+                    };
+                });
             };
 
             // 관리자 승인 처리
-            const handleAdminApproval = async (day) => {
+            const handleAdminApproval = (day) => {
                 const dateKey = getDateKey(day);
                 const password = approvalPasswords[dateKey] || '';
                 
                 if (password === CONFIG.ADMIN_PASSWORD) {
-                    const currentData = salesData[dateKey];
-                    if (currentData && currentData.id) {
-                        await updateSaleInFirestore(currentData.id, {
-                            ...currentData,
+                    setSalesData(prev => ({
+                        ...prev,
+                        [dateKey]: {
+                            ...prev[dateKey],
                             approved: true
-                        });
-                    }
+                        }
+                    }));
                     setApprovalPasswords(prev => ({
                         ...prev,
                         [dateKey]: ''
@@ -988,18 +579,18 @@
             };
 
             // 수정 모드 처리
-            const handleEditMode = async (day) => {
+            const handleEditMode = (day) => {
                 const dateKey = getDateKey(day);
                 const password = editPasswords[dateKey] || '';
                 
                 if (password === CONFIG.ADMIN_PASSWORD) {
-                    const currentData = salesData[dateKey];
-                    if (currentData && currentData.id) {
-                        await updateSaleInFirestore(currentData.id, {
-                            ...currentData,
+                    setSalesData(prev => ({
+                        ...prev,
+                        [dateKey]: {
+                            ...prev[dateKey],
                             approved: false
-                        });
-                    }
+                        }
+                    }));
                     setEditPasswords(prev => ({
                         ...prev,
                         [dateKey]: ''
@@ -1009,12 +600,12 @@
                 }
             };
 
-            // 월의 일수 구하기
+            // 월의 일수 계산
             const getDaysInMonth = () => {
                 return new Date(selectedYear, selectedMonth + 1, 0).getDate();
             };
 
-            // 주간 매출 계산
+            // 주간 매출 계산 (승인된 매출만 계산)
             const calculateWeeklySales = () => {
                 const weeks = [];
                 const daysInMonth = getDaysInMonth();
@@ -1024,6 +615,7 @@
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dateKey = getDateKey(day);
                     const dayData = salesData[dateKey] || { amount: 0, approved: false };
+                    // 승인된 매출만 계산
                     if (dayData.approved) {
                         weekTotal += dayData.amount;
                     }
@@ -1042,7 +634,7 @@
                 return weeks;
             };
 
-            // 월간 매출 계산
+            // 월간 총매출 계산 (승인된 매출만 계산)
             const calculateMonthlySales = () => {
                 let total = 0;
                 const daysInMonth = getDaysInMonth();
@@ -1050,6 +642,7 @@
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dateKey = getDateKey(day);
                     const dayData = salesData[dateKey] || { amount: 0, approved: false };
+                    // 승인된 매출만 계산
                     if (dayData.approved) {
                         total += dayData.amount;
                     }
@@ -1058,7 +651,7 @@
                 return total;
             };
 
-            // 인센티브율 계산
+            // 인센티브 비율 계산 (직원 타입별)
             const getIncentiveRate = (totalSales, type = null) => {
                 const employeeTypeToUse = type || employeeType;
                 const rates = CONFIG.INCENTIVE_RATES;
@@ -1076,77 +669,137 @@
                 return rates[employeeTypeToUse][0];
             };
 
-            // 숫자 포맷팅 함수들
-            const formatNumberWithCommas = (num) => {
-                if (!num) return '';
-                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            };
-
-            const removeCommas = (str) => {
-                return str.replace(/,/g, '');
-            };
-
-            // 아이콘 컴포넌트
-            const Icon = ({ icon, size = 20, style = {} }) => {
-                const icons = {
-                    user: <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>,
-                    Search: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>,
-                    Calendar: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-                    TrendingUp: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-                    DollarSign: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-                    ChevronDown: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>,
-                    Plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-                    X: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-                    Edit: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
-                    Check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
-                    Package: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
-                    CreditCard: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
-                    Eye: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                };
-
-                return <span style={style}>{icons[icon] || null}</span>;
-            };
-
-            // 검색 기능
-            const handleSearch = () => {
-                if (!searchQuery.trim()) {
-                    alert('검색어를 입력해주세요.');
-                    return;
-                }
-
-                const results = [];
-                Object.entries(salesData).forEach(([date, data]) => {
-                    if (data.details) {
-                        data.details.forEach(detail => {
-                            if (detail.customerName.toLowerCase().includes(searchQuery.toLowerCase())) {
-                                results.push({
-                                    date,
-                                    ...detail
-                                });
-                            }
-                        });
-                    }
-                });
-
-                setSearchResults(results);
-                setShowSearchResultModal(true);
-            };
-
-            // 로그아웃
-            const handleLogout = async () => {
-                try {
-                    await window.firebase.signOut(window.firebase.auth);
-                } catch (error) {
-                    console.error('로그아웃 실패:', error);
-                }
-            };
-
             const monthlyTotal = calculateMonthlySales();
             const incentiveRate = getIncentiveRate(monthlyTotal);
             const incentiveAmount = monthlyTotal * (incentiveRate / 100);
             const weeklySales = calculateWeeklySales();
+            
+            // 오늘 매출 계산
+            const getTodaySales = React.useCallback(() => {
+                const today = new Date();
+                // 현재 선택된 년월이 오늘과 같은지 확인
+                if (today.getMonth() === selectedMonth && today.getFullYear() === selectedYear) {
+                    const todayKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                    const todayData = salesData[todayKey];
+                    if (todayData && todayData.approved) {
+                        return todayData.amount || 0;
+                    }
+                }
+                return 0;
+            }, [salesData, selectedMonth, selectedYear]);
+            
+            // 이번주 매출 계산
+            const getThisWeekSales = React.useCallback(() => {
+                const today = new Date();
+                // 현재 선택된 년월이 오늘과 같은지 확인
+                if (today.getMonth() === selectedMonth && today.getFullYear() === selectedYear) {
+                    const currentWeek = weeklySales.find(week => {
+                        return week.days.includes(today.getDate());
+                    });
+                    return currentWeek ? currentWeek.total : 0;
+                }
+                return 0;
+            }, [weeklySales, selectedMonth, selectedYear]);
 
-            // 오늘 날짜로 스크롤
+            // SVG 아이콘 컴포넌트
+            const Icon = ({ icon: iconName, size = 24, style = {}, className = "" }) => {
+                const svgIcons = {
+                    "calendar": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    ),
+                    "dollar-sign": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    ),
+                    "check": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    ),
+                    "trending-up": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            <polyline points="17 6 23 6 23 12"></polyline>
+                        </svg>
+                    ),
+                    "edit": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    ),
+                    "plus": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    ),
+                    "trash-2": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    ),
+                    "user": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    ),
+                    "package": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                        </svg>
+                    ),
+                    "credit-card": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                    ),
+                    "search": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                    )
+                };
+                
+                return svgIcons[iconName] || <span>•</span>;
+            };
+
+            // 숫자에 천 단위 콤마 추가 함수
+            const formatNumberWithCommas = (num) => {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            };
+            
+            // 콤마가 있는 숫자에서 콤마 제거 함수
+            const removeCommas = (str) => {
+                return str.replace(/,/g, '');
+            };
+            
+            // 금액에 따른 색상 반환 함수
+            const getPriceColor = (price) => {
+                if (price >= 1000000) return '#FF6B6B'; // 100만원 이상: 빨간색
+                if (price >= 500000) return '#FFD93D'; // 50만원 이상: 노란색
+                if (price >= 300000) return '#6BCF7F'; // 30만원 이상: 초록색
+                if (price >= 100000) return '#4ECDC4'; // 10만원 이상: 청록색
+                return '#95E1D3'; // 10만원 미만: 연한 민트색
+            };
+            
+            // 오늘 날짜로 스크롤하는 함수
             const scrollToToday = () => {
                 const today = new Date();
                 if (today.getMonth() === selectedMonth && today.getFullYear() === selectedYear) {
@@ -1155,23 +808,53 @@
                     if (todayElement) {
                         todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
+                } else {
+                    // 현재 월이 아니면 현재 월로 변경
+                    setSelectedMonth(today.getMonth());
+                    setSelectedYear(today.getFullYear());
+                    setTimeout(() => {
+                        const todayDay = today.getDate();
+                        const todayElement = document.getElementById(`day-${todayDay}`);
+                        if (todayElement) {
+                            todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 500);
                 }
             };
-
-            // 가격 색상 계산 함수
-            const getPriceColor = (price) => {
-                if (price >= 900000) return '#FF00FF'; // 보라색
-                if (price >= 700000) return '#FF0080'; // 핑크
-                if (price >= 500000) return '#FF0000'; // 빨강
-                if (price >= 400000) return '#FF8C00'; // 주황
-                if (price >= 300000) return '#FFD700'; // 금색
-                if (price >= 200000) return '#00FF00'; // 초록
-                if (price >= 100000) return '#00CED1'; // 청록
-                if (price >= 50000) return '#1E90FF'; // 파랑
-                return '#808080'; // 회색
+            
+            // 회원 검색 함수
+            const searchCustomer = () => {
+                if (!searchQuery.trim()) {
+                    alert('검색할 회원명을 입력해주세요.');
+                    return;
+                }
+                
+                const results = [];
+                
+                // 모든 날짜의 매출 데이터를 검색
+                Object.entries(salesData).forEach(([dateKey, dayData]) => {
+                    if (dayData.details && Array.isArray(dayData.details)) {
+                        dayData.details.forEach(detail => {
+                            if (detail.customerName && detail.customerName.toLowerCase().includes(searchQuery.toLowerCase())) {
+                                results.push({
+                                    ...detail,
+                                    date: dateKey
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                if (results.length === 0) {
+                    alert('검색 결과가 없습니다.');
+                    return;
+                }
+                
+                setSearchResults(results);
+                setShowSearchResultModal(true);
             };
-
-            // 매출 입력 모달
+            
+            // 매출 입력 모달 컴포넌트
             const AddSaleModal = () => {
                 const [modalData, setModalData] = useState({
                     customerName: '',
@@ -1190,10 +873,7 @@
                     let totalPrice = 0;
                     if (modalData.healthProduct) totalPrice += productPrices[modalData.healthProduct] || 0;
                     if (modalData.pilatesProduct) totalPrice += productPrices[modalData.pilatesProduct] || 0;
-                    if (modalData.neofitProduct) {
-                        const neofitKey = `네오핏 ${modalData.neofitProduct}`;
-                        totalPrice += productPrices[neofitKey] || 0;
-                    }
+                    if (modalData.neofitProduct) totalPrice += productPrices[modalData.neofitProduct] || 0;
                     if (modalData.lockerType && modalData.lockerPeriod) {
                         const lockerKey = `${modalData.lockerType} ${modalData.lockerPeriod}`;
                         totalPrice += productPrices[lockerKey] || 0;
@@ -1206,7 +886,7 @@
                     setModalData(prev => ({ ...prev, price: formatNumberWithCommas(finalPrice) }));
                 }, [modalData.healthProduct, modalData.pilatesProduct, modalData.neofitProduct, modalData.lockerType, modalData.lockerPeriod, modalData.discount]);
                 
-                const handleSubmit = async (e) => {
+                const handleSubmit = (e) => {
                     e.preventDefault();
                     const selectedProducts = [];
                     if (modalData.healthProduct) selectedProducts.push('헬스: ' + modalData.healthProduct);
@@ -1234,23 +914,25 @@
                         })
                     };
                     
-                    const currentData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
-                    const newDetails = [...(currentData.details || []), newDetail];
-                    const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
-                    
-                    const updatedData = {
-                        ...currentData,
-                        details: newDetails,
-                        amount: newTotalAmount
-                    };
-
-                    // Firebase에 저장
-                    await saveSaleToFirestore(dateKey, updatedData);
+                    setSalesData(prev => {
+                        const currentData = prev[dateKey] || { amount: 0, approved: false, details: [] };
+                        const newDetails = [...(currentData.details || []), newDetail];
+                        const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
+                        
+                        return {
+                            ...prev,
+                            [dateKey]: {
+                                ...currentData,
+                                details: newDetails,
+                                amount: newTotalAmount
+                            }
+                        };
+                    });
                     
                     setShowAddSaleModal(false);
                     setModalData({ customerName: '', healthProduct: '', pilatesProduct: '', neofitProduct: '', lockerProduct: '', lockerType: '', lockerPeriod: '', price: '', discount: '' });
                     
-                    // 해당 날짜로 스크롤
+                    // 오늘 날짜로 스크롤
                     setTimeout(() => {
                         const dayElement = document.getElementById(`day-${selectedModalDay}`);
                         if (dayElement && dailyViewRef.current) {
@@ -1260,8 +942,8 @@
                 };
                 
                 return (
-                    <div className="modal-backdrop" onClick={() => setShowAddSaleModal(false)}>
-                        <div className="modal-content slide-in" style={{ width: '500px', maxWidth: '90%' }} onClick={(e) => e.stopPropagation()}>
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowAddSaleModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '500px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
                             <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#00FF88' }}>
                                 {selectedMonth + 1}월 {selectedModalDay}일 매출 입력
                             </h3>
@@ -1319,14 +1001,11 @@
                                         className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
                                     >
                                         <option value="">네오핏 이용권 선택</option>
-                                        {neofitProducts.map(product => {
-                                            const priceKey = `네오핏 ${product}`;
-                                            return (
-                                                <option key={product} value={product}>
-                                                    {product} - {productPrices[priceKey].toLocaleString()}원
-                                                </option>
-                                            );
-                                        })}
+                                        {neofitProducts.map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 
@@ -1370,10 +1049,15 @@
                                     <label className="block text-sm font-semibold mb-2 text-gray-300">할인 금액</label>
                                     <input
                                         type="text"
+                                        inputMode="numeric"
                                         value={modalData.discount}
                                         onChange={(e) => {
                                             const value = e.target.value.replace(/[^0-9]/g, '');
-                                            setModalData({...modalData, discount: formatNumberWithCommas(value)});
+                                            if (value === '') {
+                                                setModalData({...modalData, discount: ''});
+                                            } else {
+                                                setModalData({...modalData, discount: formatNumberWithCommas(value)});
+                                            }
                                         }}
                                         className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
                                         placeholder="할인 금액을 입력하세요"
@@ -1382,13 +1066,13 @@
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-sm font-semibold mb-2 text-gray-300">최종 금액</label>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-300">최종 가격</label>
                                     <input
                                         type="text"
                                         value={modalData.price}
                                         readOnly
-                                        className="glass-effect rounded-lg px-4 py-3 w-full bg-gray-800 cursor-not-allowed"
-                                        style={{ color: '#00FF88', fontWeight: 'bold', fontSize: '18px' }}
+                                        className="glass-effect rounded-lg px-4 py-3 w-full bg-gray-800/50 cursor-not-allowed text-green-400 font-bold text-lg"
+                                        placeholder="상품을 선택하면 가격이 자동 계산됩니다"
                                     />
                                 </div>
                                 
@@ -1404,7 +1088,7 @@
                                         type="submit"
                                         className="flex-1 glass-effect border-green-500 hover:border-green-400 rounded-lg py-3 font-semibold transition-all hover:shadow-lg text-white"
                                     >
-                                        매출 등록
+                                        등록
                                     </button>
                                 </div>
                             </form>
@@ -1412,179 +1096,233 @@
                     </div>
                 );
             };
-
-            // 검색 결과 모달
+            
+            // 검색 결과 모달 컴포넌트
             const SearchResultModal = () => {
-                const groupedResults = {};
-                searchResults.forEach(result => {
-                    const customerName = result.customerName;
-                    if (!groupedResults[customerName]) {
-                        groupedResults[customerName] = [];
-                    }
-                    groupedResults[customerName].push(result);
-                });
-
+                const totalAmount = searchResults.reduce((sum, item) => sum + (item.price || 0), 0);
+                const groupedByDate = searchResults.reduce((acc, item) => {
+                    if (!acc[item.date]) acc[item.date] = [];
+                    acc[item.date].push(item);
+                    return acc;
+                }, {});
+                
                 return (
-                    <div className="modal-backdrop" onClick={() => setShowSearchResultModal(false)}>
-                        <div className="modal-content slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '80vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowSearchResultModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
                             <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#00FF88' }}>
                                 '{searchQuery}' 검색 결과
                             </h3>
                             
-                            {Object.keys(groupedResults).length === 0 ? (
-                                <p className="text-center text-gray-400 py-8">검색 결과가 없습니다.</p>
-                            ) : (
-                                <div className="space-y-6">
-                                    {Object.entries(groupedResults).map(([customerName, results]) => (
-                                        <div key={customerName} className="glass-effect rounded-xl p-4">
-                                            <h4 className="text-lg font-bold mb-3" style={{ color: '#00C6FF' }}>{customerName}</h4>
-                                            <div className="space-y-2">
-                                                {results.map((result, index) => (
-                                                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-700">
-                                                        <div>
-                                                            <p className="text-sm text-gray-400">{result.date}</p>
-                                                            <p className="text-xs text-gray-500">{result.product}</p>
-                                                        </div>
-                                                        <p className="font-semibold" style={{ color: getPriceColor(result.price) }}>
-                                                            {result.price.toLocaleString()}원
-                                                        </p>
+                            <div className="mb-6 text-center">
+                                <div className="glass-effect rounded-xl p-4 mb-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 결제 건수</p>
+                                    <p className="text-3xl font-bold text-white">{searchResults.length}건</p>
+                                </div>
+                                <div className="glass-effect rounded-xl p-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 결제 금액</p>
+                                    <p className="text-3xl font-bold" style={{ color: '#00FF88' }}>
+                                        {totalAmount.toLocaleString()}원
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                                {Object.entries(groupedByDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, items]) => (
+                                    <div key={date} className="glass-effect rounded-xl p-4">
+                                        <div className="font-semibold text-gray-300 mb-3">{date}</div>
+                                        <div className="space-y-2">
+                                            {items.map((item, index) => (
+                                                <div key={index} className="flex justify-between items-start p-3 bg-gray-800/50 rounded-lg">
+                                                    <div className="flex-1">
+                                                        <div className="text-sm text-gray-400">{item.timestamp}</div>
+                                                        <div className="text-xs text-gray-500 mt-1">{item.product}</div>
                                                     </div>
-                                                ))}
-                                                <div className="pt-2 mt-2 border-t border-gray-600">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="font-semibold text-gray-300">총 구매금액</span>
-                                                        <span className="text-xl font-bold" style={{ color: '#00FF88' }}>
-                                                            {results.reduce((sum, r) => sum + r.price, 0).toLocaleString()}원
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center mt-1">
-                                                        <span className="text-sm text-gray-400">총 구매건수</span>
-                                                        <span className="text-sm text-gray-400">{results.length}건</span>
+                                                    <div className="font-bold" style={{ color: getPriceColor(item.price || 0) }}>
+                                                        {(item.price || 0).toLocaleString()}원
                                                     </div>
                                                 </div>
-                                            </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                    </div>
+                                ))}
+                            </div>
                             
-                            <button
-                                onClick={() => setShowSearchResultModal(false)}
-                                className="w-full mt-6 glass-effect border-gray-500 hover:border-gray-400 rounded-lg py-3 font-semibold transition-all text-gray-300 hover:text-white"
-                            >
-                                닫기
-                            </button>
+                            <div className="mt-6">
+                                <button
+                                    onClick={() => setShowSearchResultModal(false)}
+                                    className="w-full glass-effect hover:border-gray-400 rounded-lg py-3 font-semibold transition-all text-white"
+                                >
+                                    닫기
+                                </button>
+                            </div>
                         </div>
                     </div>
                 );
             };
 
-            if (loading) {
-                return (
-                    <div className="main-container" style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minHeight: '100vh'
-                    }}>
-                        <div className="loading-spinner" style={{width: '50px', height: '50px'}}></div>
-                    </div>
-                );
-            }
-
             return (
-                <div className="main-container">
-                    <div className="top-bar">
-                        <div className="sync-status">
-                            <div className="sync-icon"></div>
-                            <span>{syncing ? '동기화 중...' : '실시간 동기화'}</span>
+                <div className="min-h-screen bg-gradient-to-br text-gray-100 p-4">
+                    <div className="max-w-7xl mx-auto">
+                        {/* 매출 입력 모달 */}
+                        {showAddSaleModal && <AddSaleModal />}
+                        {/* 검색 결과 모달 */}
+                        {showSearchResultModal && <SearchResultModal />}
+                        {/* 헤더 */}
+                        <div className="text-center mb-8 sm:mb-10">
+                            <h1 className="text-3xl sm:text-5xl font-black mb-2 sm:mb-3" style={{ color: '#00FF88' }}>
+                                NeoFit PayCalc
+                            </h1>
+                            <p className="text-gray-400 text-base sm:text-lg">네오핏 급여 계산기</p>
                         </div>
-                        <div className="user-info">
-                            <span>{user.email}</span>
-                            <button onClick={handleLogout} className="logout-button">
-                                로그아웃
-                            </button>
+                        
+                        {/* 회원 검색 */}
+                        <div className="mb-6 flex justify-center">
+                            <div className="flex gap-2" style={{ maxWidth: '400px', width: '100%' }}>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && searchCustomer()}
+                                    placeholder="회원명을 검색하세요"
+                                    className="flex-1 glass-effect rounded-lg px-4 py-3 focus:border-green-400 focus:outline-none"
+                                />
+                                <button
+                                    onClick={searchCustomer}
+                                    className="glass-effect border-green-500 hover:border-green-400 rounded-lg px-6 py-3 font-semibold transition-all hover:shadow-lg text-white"
+                                >
+                                    <Icon icon="search" size={20} />
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="content-wrapper">
-                        <h1 className="text-center text-5xl font-black mb-8" style={{
-                            background: 'linear-gradient(135deg, #00FF88 0%, #00CC6A 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            textShadow: '0 0 30px rgba(0, 255, 136, 0.3)'
-                        }}>
-                            NeoFit PayCalc
-                        </h1>
-
-                        {/* 검색 바 */}
-                        <div className="glass-effect rounded-2xl p-4 mb-8 flex items-center gap-4">
-                            <Icon icon="Search" size={24} style={{ color: '#00FF88' }} />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                placeholder="회원명 검색..."
-                                className="flex-1 bg-transparent outline-none text-lg"
-                            />
+                        {/* 뷰 모드 선택 */}
+                        <div className="flex justify-center gap-2 mb-6">
                             <button
-                                onClick={handleSearch}
-                                className="glass-effect rounded-xl px-6 py-2 hover:border-green-400 transition-all font-semibold"
+                                onClick={() => setViewMode('daily')}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-all glass-effect ${
+                                    viewMode === 'daily' 
+                                        ? 'text-green-400 border-green-500 shadow-lg scale-105' 
+                                        : 'text-gray-400 hover:text-white hover:border-gray-400'
+                                }`}
+                                style={viewMode === 'daily' ? { 
+                                    backgroundColor: '#0a4a2c',
+                                    borderColor: '#00FF88',
+                                    boxShadow: '0 0 15px rgba(0, 255, 136, 0.5)'
+                                } : {}}
                             >
-                                검색
+                                일별
+                            </button>
+                            <button
+                                onClick={() => setViewMode('weekly')}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-all glass-effect ${
+                                    viewMode === 'weekly' 
+                                        ? 'text-green-400 border-green-500 shadow-lg scale-105' 
+                                        : 'text-gray-400 hover:text-white hover:border-gray-400'
+                                }`}
+                                style={viewMode === 'weekly' ? { 
+                                    backgroundColor: '#0a4a2c',
+                                    borderColor: '#00FF88',
+                                    boxShadow: '0 0 15px rgba(0, 255, 136, 0.5)'
+                                } : {}}
+                            >
+                                주별
+                            </button>
+                            <button
+                                onClick={() => setViewMode('monthly')}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-all glass-effect ${
+                                    viewMode === 'monthly' 
+                                        ? 'text-green-400 border-green-500 shadow-lg scale-105' 
+                                        : 'text-gray-400 hover:text-white hover:border-gray-400'
+                                }`}
+                                style={viewMode === 'monthly' ? { 
+                                    backgroundColor: '#0a4a2c',
+                                    borderColor: '#00FF88',
+                                    boxShadow: '0 0 15px rgba(0, 255, 136, 0.5)'
+                                } : {}}
+                            >
+                                월별
                             </button>
                         </div>
+                        
+                        {/* 직원 유형 선택 및 월 선택 */}
+                        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-10 flex-wrap">
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setEmployeeType('full')}
+                                    className={`px-6 sm:px-8 py-3 rounded-xl font-semibold transition-all duration-300 text-sm sm:text-base glass-effect ${
+                                        employeeType === 'full' 
+                                            ? 'text-white border-green-500 shadow-lg scale-105 bg-green-500/20' 
+                                            : 'text-gray-400 hover:text-white hover:border-gray-400'
+                                    }`}
+                                >
+                                    정직원
+                                </button>
+                                <button
+                                    onClick={() => setEmployeeType('part')}
+                                    className={`px-6 sm:px-8 py-3 rounded-xl font-semibold transition-all duration-300 text-sm sm:text-base glass-effect ${
+                                        employeeType === 'part' 
+                                            ? 'text-white border-green-500 shadow-lg scale-105 bg-green-500/20' 
+                                            : 'text-gray-400 hover:text-white hover:border-gray-400'
+                                    }`}
+                                >
+                                    파트타임
+                                </button>
+                            </div>
+                            
+                            <div className="flex gap-3 w-full sm:w-auto">
+                                <select
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                                    className="glass-effect rounded-xl px-4 sm:px-6 py-3 focus:border-green-400 focus:outline-none font-medium transition-all hover:scale-105 text-sm sm:text-base flex-1 sm:flex-initial"
+                                    style={{ borderColor: '#00C66E' }}
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => (
+                                        <option key={i} value={i}>
+                                            {new Date(2024, i).toLocaleDateString('ko-KR', { month: 'long' })}
+                                        </option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                                    className="glass-effect rounded-xl px-4 sm:px-6 py-3 focus:border-green-400 focus:outline-none font-medium transition-all hover:scale-105 text-sm sm:text-base flex-1 sm:flex-initial"
+                                    style={{ borderColor: '#00C66E' }}
+                                >
+                                    {[2024, 2025, 2026].map(year => (
+                                        <option key={year} value={year}>{year}년</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-                        {/* 컨트롤 바 */}
-                        <div className="glass-effect rounded-2xl p-6 mb-8">
-                            <div className="flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => setEmployeeType('full')}
-                                        className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                                            employeeType === 'full' 
-                                                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg' 
-                                                : 'glass-effect hover:border-green-400'
-                                        }`}
-                                    >
-                                        정직원
-                                    </button>
-                                    <button
-                                        onClick={() => setEmployeeType('part')}
-                                        className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                                            employeeType === 'part' 
-                                                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg' 
-                                                : 'glass-effect hover:border-blue-400'
-                                        }`}
-                                    >
-                                        파트타임
-                                    </button>
-                                </div>
-                                
-                                <div className="flex gap-3">
-                                    <select
-                                        value={selectedMonth}
-                                        onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                                        className="glass-effect rounded-xl px-4 py-3 focus:border-green-400 focus:outline-none"
-                                    >
-                                        {Array.from({ length: 12 }, (_, i) => (
-                                            <option key={i} value={i}>
-                                                {new Date(2024, i).toLocaleDateString('ko-KR', { month: 'long' })}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    
-                                    <select
-                                        value={selectedYear}
-                                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                                        className="glass-effect rounded-xl px-4 py-3 focus:border-green-400 focus:outline-none"
-                                    >
-                                        {[2023, 2024, 2025, 2026].map(year => (
-                                            <option key={year} value={year}>{year}년</option>
-                                        ))}
-                                    </select>
-                                </div>
+                        {/* 통계 요약 */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                            <div className="glass-effect rounded-2xl p-4 text-center transition-all">
+                                <p className="text-gray-400 text-sm mb-1">오늘 매출</p>
+                                <p className="text-2xl font-bold text-white">
+                                    {getTodaySales().toLocaleString()}원
+                                </p>
+                            </div>
+                            <div className="glass-effect rounded-2xl p-4 text-center transition-all">
+                                <p className="text-gray-400 text-sm mb-1">이번주 매출</p>
+                                <p className="text-2xl font-bold" style={{ color: '#00C6FF' }}>
+                                    {getThisWeekSales().toLocaleString()}원
+                                </p>
+                            </div>
+                            <div className="glass-effect rounded-2xl p-4 text-center transition-all">
+                                <p className="text-gray-400 text-sm mb-1">월 매출</p>
+                                <p className="text-2xl font-bold" style={{ color: '#FFB800' }}>
+                                    {monthlyTotal.toLocaleString()}원
+                                </p>
+                            </div>
+                            <div className="glass-effect rounded-2xl p-4 text-center transition-all">
+                                <p className="text-gray-400 text-sm mb-1">예상 인센티브</p>
+                                <p className="text-2xl font-bold" style={{ 
+                                    color: '#00FF88',
+                                    textShadow: '0 0 10px rgba(0, 255, 136, 0.8), 0 0 20px rgba(0, 255, 136, 0.6), 0 0 30px rgba(0, 255, 136, 0.4)'
+                                }}>
+                                    {Math.floor(incentiveAmount).toLocaleString()}원
+                                </p>
                             </div>
                         </div>
 
@@ -1594,215 +1332,324 @@
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-2xl font-bold flex items-center gap-3">
                                         <div className="p-2 bg-green-500/20 rounded-lg">
-                                            <Icon icon="Calendar" size={28} style={{ color: '#00FF88' }} />
+                                            <Icon icon={Calendar} size={28} style={{ color: '#00FF88' }} />
                                         </div>
-                                        매출 현황
+                                        {viewMode === 'daily' ? '일별 매출 현황' : viewMode === 'weekly' ? '주별 매출 현황' : '월별 매출 현황'}
                                     </h2>
-                                    
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setViewMode('daily')}
-                                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                                                viewMode === 'daily' ? 'bg-green-500 text-white' : 'glass-effect hover:border-green-400'
-                                            }`}
-                                        >
-                                            일별
-                                        </button>
-                                        <button
-                                            onClick={() => setViewMode('weekly')}
-                                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                                                viewMode === 'weekly' ? 'bg-blue-500 text-white' : 'glass-effect hover:border-blue-400'
-                                            }`}
-                                        >
-                                            주별
-                                        </button>
-                                        <button
-                                            onClick={() => setViewMode('monthly')}
-                                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                                                viewMode === 'monthly' ? 'bg-purple-500 text-white' : 'glass-effect hover:border-purple-400'
-                                            }`}
-                                        >
-                                            월별
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* 일별 뷰 */}
-                                {viewMode === 'daily' && (
-                                    <div>
-                                        <div className="flex justify-between items-center mb-4">
-                                            <div className="text-sm text-gray-400">
-                                                <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#808080' }}></span>50,000원 미만
-                                                <span className="inline-block w-3 h-3 rounded-full ml-4 mr-2" style={{ backgroundColor: '#1E90FF' }}></span>50,000원 이상
-                                                <span className="inline-block w-3 h-3 rounded-full ml-4 mr-2" style={{ backgroundColor: '#00CED1' }}></span>100,000원 이상
-                                                <span className="inline-block w-3 h-3 rounded-full ml-4 mr-2" style={{ backgroundColor: '#00FF00' }}></span>200,000원 이상
-                                                <span className="inline-block w-3 h-3 rounded-full ml-4 mr-2" style={{ backgroundColor: '#FFD700' }}></span>300,000원 이상
-                                                <span className="inline-block w-3 h-3 rounded-full ml-4 mr-2" style={{ backgroundColor: '#FF8C00' }}></span>400,000원 이상
-                                                <span className="inline-block w-3 h-3 rounded-full ml-4 mr-2" style={{ backgroundColor: '#FF0000' }}></span>500,000원 이상
-                                                <span className="inline-block w-3 h-3 rounded-full ml-4 mr-2" style={{ backgroundColor: '#FF0080' }}></span>700,000원 이상
-                                                <span className="inline-block w-3 h-3 rounded-full ml-4 mr-2" style={{ backgroundColor: '#FF00FF' }}></span>900,000원 이상
-                                            </div>
+                                    {viewMode === 'daily' && (
+                                        <div className="flex gap-2">
                                             <button
                                                 onClick={scrollToToday}
-                                                className="glass-effect rounded-xl px-4 py-2 hover:border-green-400 transition-all text-sm font-semibold flex items-center gap-2"
+                                                className="glass-effect rounded-full p-3 border-green-500 hover:border-green-400 transition-all hover:shadow-lg"
+                                                title="오늘로 이동"
                                             >
-                                                <Icon icon="Calendar" size={16} />
-                                                오늘로 이동
+                                                <Icon icon={Calendar} size={20} style={{ color: '#00FF88' }} />
                                             </button>
+                                            <div className="relative group">
+                                                <button
+                                                    onClick={() => {
+                                                        const today = new Date();
+                                                        const day = today.getMonth() === selectedMonth && today.getFullYear() === selectedYear ? today.getDate() : 1;
+                                                        openAddSaleModal(day);
+                                                    }}
+                                                    className="glass-effect rounded-full p-3 border-blue-500 hover:border-blue-400 transition-all hover:shadow-lg"
+                                                >
+                                                <Icon icon={Plus} size={24} style={{ color: 'white' }} />
+                                            </button>
+                                            <div className="absolute right-0 top-full mt-2 bg-gray-800 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                                오늘 매출 입력하기
+                                            </div>
+                                            </div>
                                         </div>
-
-                                        <div ref={dailyViewRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-                                            {Array.from({ length: getDaysInMonth() }, (_, i) => i + 1).map(day => {
-                                                const dateKey = getDateKey(day);
-                                                const dayData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
-                                                const date = new Date(selectedYear, selectedMonth, day);
-                                                const dayName = date.toLocaleDateString('ko-KR', { weekday: 'short' });
-                                                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                                                const isToday = date.toDateString() === new Date().toDateString();
-                                                
-                                                return (
-                                                    <div 
-                                                        key={day} 
-                                                        id={`day-${day}`}
-                                                        className={`glass-effect rounded-2xl p-5 hover:scale-[1.02] transition-all ${
-                                                            isToday ? 'ring-2 ring-green-500' : ''
-                                                        }`}
-                                                    >
-                                                        <div className="flex justify-between items-center mb-4">
-                                                            <div>
-                                                                <h3 className={`text-xl font-bold ${isWeekend ? 'text-red-400' : 'text-white'}`}>
-                                                                    {selectedMonth + 1}월 {day}일
-                                                                </h3>
-                                                                <p className="text-sm text-gray-400">{dayName}</p>
+                                    )}
+                                </div>
+                                
+                                {/* 일별 뷰 */}
+                                {viewMode === 'daily' && (
+                                    <div ref={dailyViewRef} className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[650px] overflow-y-auto p-2">
+                                        {Array.from({ length: getDaysInMonth() }, (_, i) => i + 1).map(day => {
+                                        const dateKey = getDateKey(day);
+                                        const dayData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+                                        const date = new Date(selectedYear, selectedMonth, day);
+                                        const dayName = date.toLocaleDateString('ko-KR', { weekday: 'short' });
+                                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                                        
+                                        return (
+                                            <div key={day} id={`day-${day}`} className={`glass-effect rounded-2xl p-4 sm:p-5 hover:scale-[1.02] transition-all duration-300 slide-in ${isWeekend ? 'border-pink-500/30' : ''}`}>
+                                                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                                    <div className="flex items-center gap-2 sm:gap-3">
+                                                        <span className={`text-base sm:text-lg font-bold ${isWeekend ? 'text-pink-400' : 'text-white'}`}>
+                                                            {selectedMonth + 1}월 {day}일
+                                                        </span>
+                                                        <span className={`text-xs sm:text-sm px-2 py-1 rounded-full ${isWeekend ? 'bg-pink-500/20 text-pink-400' : 'bg-gray-700 text-gray-400'}`}>
+                                                            {dayName}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {dayData.approved && (
+                                                            <div className="flex items-center gap-2">
+                                                                <Icon icon={Check} size={20} style={{ color: '#00FF88' }} />
                                                             </div>
-                                                            {isToday && (
-                                                                <span className="px-3 py-1 bg-green-500/20 rounded-full text-xs text-green-400 font-semibold">
-                                                                    오늘
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        
-                                                        <div className="mb-4">
-                                                            <p className="text-3xl font-black" style={{ color: getPriceColor(dayData.amount) }}>
-                                                                {dayData.amount.toLocaleString()}원
-                                                            </p>
-                                                            <p className="text-sm text-gray-400 mt-1">
-                                                                {dayData.details?.length || 0}건의 매출
-                                                            </p>
-                                                        </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className={`rounded-xl p-3 sm:p-4 mb-3 sm:mb-4 ${dayData.amount > 0 ? 'bg-gradient-to-r from-green-500/10 to-blue-500/10' : 'bg-gray-800/50'}`}>
+                                                    <div className="text-2xl sm:text-3xl font-black mb-1" style={{ color: dayData.amount > 0 ? '#00FF88' : '#6b7280' }}>
+                                                        {(dayData.amount || 0).toLocaleString()}원
+                                                    </div>
+                                                    <div className="text-xs sm:text-sm text-gray-400 flex items-center gap-2">
+                                                        <Icon icon={Package} size={14} />
+                                                        {dayData.details?.length || 0}건의 매출
+                                                    </div>
+                                                </div>
 
-                                                        {/* 매출 내역 */}
-                                                        {dayData.details && dayData.details.length > 0 && (
-                                                            <div className="space-y-2 mb-4">
-                                                                {dayData.details.map(detail => (
-                                                                    <div key={detail.id} className="glass-effect rounded-lg p-3 text-sm">
-                                                                        <div className="flex justify-between items-start">
+                                                {/* 매출 상세 내역 */}
+                                                {dayData.details && dayData.details.length > 0 && (
+                                                    <div className="mb-4">
+                                                        <div className="flex flex-col gap-2 mb-3">
+                                                            <div className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                                                                <Icon icon={DollarSign} size={16} />
+                                                                매출 내역 ({dayData.details.length}건)
+                                                            </div>
+                                                            <div className="flex items-center justify-start gap-1 text-xs overflow-x-auto">
+                                                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#95E1D3' }}></span>
+                                                                    <span className="text-gray-500 text-[10px]">~10</span>
+                                                                </span>
+                                                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#4ECDC4' }}></span>
+                                                                    <span className="text-gray-500 text-[10px]">10~</span>
+                                                                </span>
+                                                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#6BCF7F' }}></span>
+                                                                    <span className="text-gray-500 text-[10px]">30~</span>
+                                                                </span>
+                                                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#FFD93D' }}></span>
+                                                                    <span className="text-gray-500 text-[10px]">50~</span>
+                                                                </span>
+                                                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#FF6B6B' }}></span>
+                                                                    <span className="text-gray-500 text-[10px]">100~</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                                            {dayData.details.map((detail, index) => (
+                                                                <div key={detail.id} className="relative">
+                                                                    <div className="glass-effect rounded-xl p-4 hover:scale-[1.01] transition-all border border-gray-700/50 hover:border-green-500/30">
+                                                                        <div className="flex justify-between items-start gap-3">
                                                                             <div className="flex-1">
-                                                                                <p className="font-semibold">{detail.customerName}</p>
-                                                                                <p className="text-xs text-gray-400">{detail.product}</p>
-                                                                                <p className="font-bold mt-1" style={{ color: getPriceColor(detail.price) }}>
-                                                                                    {detail.price.toLocaleString()}원
-                                                                                </p>
+                                                                                <div className="flex items-start justify-between mb-2">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                                                                                            <span className="text-xs font-bold text-green-400">{index + 1}</span>
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <div className="font-semibold text-white text-sm">
+                                                                                                {detail.customerName}
+                                                                                            </div>
+                                                                                            <div className="text-gray-500 text-xs">
+                                                                                                {detail.timestamp}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="font-bold text-lg" style={{ color: getPriceColor(detail.price || 0) }}>
+                                                                                        {(detail.price || 0).toLocaleString()}원
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="bg-gray-800/50 rounded-lg px-3 py-2 text-xs text-gray-300">
+                                                                                    {detail.product}
+                                                                                </div>
                                                                             </div>
                                                                             {!dayData.approved && (
                                                                                 <button
                                                                                     onClick={() => removeSaleDetail(day, detail.id)}
-                                                                                    className="text-red-400 hover:text-red-300 p-1"
+                                                                                    className="text-red-400 hover:text-red-300 p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-all"
                                                                                 >
-                                                                                    <Icon icon="X" size={16} />
+                                                                                    <Icon icon={Trash2} size={16} />
                                                                                 </button>
                                                                             )}
                                                                         </div>
-                                                                        <p className="text-xs text-gray-500 mt-1">{detail.timestamp}</p>
                                                                     </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-
-                                                        {/* 매출 입력 버튼 */}
-                                                        {!dayData.approved && (
-                                                            <button
-                                                                onClick={() => openAddSaleModal(day)}
-                                                                className="w-full glass-effect border-green-500 hover:border-green-400 rounded-xl py-3 font-semibold transition-all hover:shadow-lg text-white flex items-center justify-center gap-2 mb-4"
-                                                            >
-                                                                <Icon icon="Plus" size={18} />
-                                                                빠른 매출 입력
-                                                            </button>
-                                                        )}
-
-                                                        {/* 승인/수정 */}
-                                                        {!dayData.approved ? (
-                                                            <div className="flex gap-2">
-                                                                <input
-                                                                    type="password"
-                                                                    value={approvalPasswords[dateKey] || ''}
-                                                                    onChange={(e) => setApprovalPasswords(prev => ({
-                                                                        ...prev,
-                                                                        [dateKey]: e.target.value
-                                                                    }))}
-                                                                    placeholder="PW"
-                                                                    className="w-8 px-1 py-1.5 text-sm rounded border border-gray-600 bg-gray-700 text-white focus:border-blue-500"
-                                                                    style={{ fontSize: '16px' }}
-                                                                    onKeyPress={(e) => {
-                                                                        if (e.key === 'Enter') {
-                                                                            handleAdminApproval(day);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <button
-                                                                    onClick={() => handleAdminApproval(day)}
-                                                                    className="flex-1 glass-effect border-blue-500 hover:border-blue-400 rounded-xl py-3 text-base font-semibold transition-all hover:shadow-lg text-white"
-                                                                >
-                                                                    승인
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="space-y-3">
-                                                                <button
-                                                                    className="w-full glass-effect border-green-500 rounded-xl py-3 text-base font-semibold cursor-default flex items-center justify-center gap-2 shadow-lg text-white opacity-70"
-                                                                    disabled
-                                                                >
-                                                                    <Icon icon="Check" size={18} />
-                                                                    정산완료
-                                                                </button>
-                                                                <div className="flex gap-2">
-                                                                    <input
-                                                                        type="password"
-                                                                        value={editPasswords[dateKey] || ''}
-                                                                        onChange={(e) => setEditPasswords(prev => ({
-                                                                            ...prev,
-                                                                            [dateKey]: e.target.value
-                                                                        }))}
-                                                                        placeholder="PW"
-                                                                        className="w-8 px-1 py-1.5 text-sm rounded border border-gray-600 bg-gray-700 text-white focus:border-orange-400"
-                                                                        style={{ fontSize: '16px' }}
-                                                                        onKeyPress={(e) => {
-                                                                            if (e.key === 'Enter') {
-                                                                                handleEditMode(day);
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                    <button
-                                                                        onClick={() => handleEditMode(day)}
-                                                                        className="flex-1 glass-effect border-orange-500 hover:border-orange-400 rounded-xl py-3 text-base font-semibold transition-all hover:shadow-lg text-white flex items-center justify-center gap-2"
-                                                                    >
-                                                                        <Icon icon="Edit" size={16} />
-                                                                        수정
-                                                                    </button>
                                                                 </div>
-                                                            </div>
-                                                        )}
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
+                                                )}
+
+                                                {/* 매출이 없을 때 안내 */}
+                                                {(!dayData.details || dayData.details.length === 0) && dayData.amount === 0 && (
+                                                    <div className="text-center py-6 text-gray-500 text-sm glass-effect rounded-xl mb-4">
+                                                        <Icon icon={DollarSign} size={24} className="mx-auto mb-2 opacity-30" />
+                                                        등록된 매출이 없습니다
+                                                    </div>
+                                                )}
+
+                                                {/* 매출 입력 버튼 */}
+                                                {!dayData.approved && (
+                                                    <button
+                                                        onClick={() => openAddSaleModal(day)}
+                                                        className="w-full glass-effect border-blue-500 hover:border-blue-400 rounded-xl py-3 text-sm font-semibold transition-all flex items-center justify-center gap-2 hover:shadow-lg mb-4 text-white"
+                                                    >
+                                                        <Icon icon={Plus} size={18} />
+                                                        빠른 매출 입력
+                                                    </button>
+                                                )}
+
+                                                {/* 매출 입력 폼 */}
+                                                {expandedDays[day] && !dayData.approved && (
+                                                    <div className="glass-effect rounded-xl p-5 mb-4 space-y-4 slide-in">
+                                                        <div className="text-sm font-bold text-green-400 mb-4 flex items-center gap-2">
+                                                            <Icon icon={Edit} size={16} />
+                                                            {selectedMonth + 1}월 {day}일 매출 입력
+                                                        </div>
+
+                                                        {/* 회원명 입력 */}
+                                                        <div>
+                                                            <label className="block text-xs font-semibold mb-2 text-gray-300 flex items-center gap-2">
+                                                                <Icon icon="user" size={14} />
+                                                                회원명
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={customerName[day] || ''}
+                                                                onChange={(e) => setCustomerName(prev => ({
+                                                                    ...prev,
+                                                                    [day]: e.target.value
+                                                                }))}
+                                                                placeholder="회원명을 입력하세요"
+                                                                className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none text-sm transition-all"
+                                                            />
+                                                        </div>
+
+                                                        {/* 상품 선택 */}
+                                                        <div>
+                                                            <label className="block text-xs font-semibold mb-2 text-gray-300 flex items-center gap-2">
+                                                                <Icon icon={Package} size={14} />
+                                                                상품
+                                                            </label>
+                                                            <select
+                                                                value={selectedProducts[day] || ''}
+                                                                onChange={(e) => setSelectedProducts(prev => ({
+                                                                    ...prev,
+                                                                    [day]: e.target.value
+                                                                }))}
+                                                                className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none text-sm transition-all"
+                                                            >
+                                                                <option value="">상품을 선택하세요</option>
+                                                                {products.map(product => (
+                                                                    <option key={product} value={product}>{product}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+
+                                                        {/* 가격 입력 */}
+                                                        <div>
+                                                            <label className="block text-xs font-semibold mb-2 text-gray-300 flex items-center gap-2">
+                                                                <Icon icon={CreditCard} size={14} />
+                                                                가격
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                value={customPrices[day] || ''}
+                                                                onChange={(e) => setCustomPrices(prev => ({
+                                                                    ...prev,
+                                                                    [day]: e.target.value
+                                                                }))}
+                                                                placeholder="가격을 입력하세요"
+                                                                className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none text-sm transition-all"
+                                                            />
+                                                        </div>
+
+                                                        {/* 등록 버튼 */}
+                                                        <button
+                                                            onClick={() => addSaleDetail(day)}
+                                                            className="w-full glass-effect border-green-500 hover:border-green-400 rounded-lg py-3 font-semibold text-sm transition-all hover:shadow-lg text-white"
+                                                        >
+                                                            매출 등록
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                
+                                                {!dayData.approved ? (
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="password"
+                                                            value={approvalPasswords[dateKey] || ''}
+                                                            onChange={(e) => {
+                                                                const newValue = e.target.value;
+                                                                setApprovalPasswords(prev => ({
+                                                                    ...prev,
+                                                                    [dateKey]: newValue
+                                                                }));
+                                                            }}
+                                                            placeholder="PW"
+                                                            className="glass-effect rounded-xl px-1 sm:px-3 py-3 w-10 sm:w-32 focus:border-green-400 focus:outline-none text-xs sm:text-base transition-all text-center"
+                                                            style={{ fontSize: '16px' }}
+                                                            onKeyPress={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    handleAdminApproval(day);
+                                                                }
+                                                            }}
+                                                        />
+                                                        <button
+                                                            onClick={() => handleAdminApproval(day)}
+                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-3 sm:px-6 py-3 text-xs sm:text-base font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white"
+                                                        >
+                                                            승인
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        <button
+                                                            className="glass-effect border-green-500 rounded-xl px-4 py-3 text-base font-semibold cursor-default flex items-center gap-2 w-full justify-center shadow-lg text-white opacity-70"
+                                                            disabled
+                                                        >
+                                                            <Icon icon={Check} size={18} />
+                                                            정산완료
+                                                        </button>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="password"
+                                                                value={editPasswords[dateKey] || ''}
+                                                                onChange={(e) => {
+                                                                    const newValue = e.target.value;
+                                                                    setEditPasswords(prev => ({
+                                                                        ...prev,
+                                                                        [dateKey]: newValue
+                                                                    }));
+                                                                }}
+                                                                placeholder="PW"
+                                                                className="glass-effect rounded-xl px-1 sm:px-3 py-3 w-10 sm:w-36 focus:border-orange-400 focus:outline-none text-xs sm:text-base transition-all text-center"
+                                                                style={{ fontSize: '16px' }}
+                                                                onKeyPress={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        handleEditMode(day);
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <button
+                                                                onClick={() => handleEditMode(day)}
+                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-2 sm:px-6 py-3 text-xs sm:text-base font-semibold transition-all whitespace-nowrap flex items-center gap-1 hover:shadow-lg text-white"
+                                                            >
+                                                                <Icon icon={Edit} size={16} />
+                                                                <span className="hidden sm:inline">수정</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                        })}
                                     </div>
                                 )}
-
+                                
                                 {/* 주별 뷰 */}
                                 {viewMode === 'weekly' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {weeklySales.map((week, index) => (
+                                        {calculateWeeklySales().map((week, index) => (
                                             <div key={index} className="glass-effect rounded-2xl p-6 hover:scale-[1.02] transition-all">
                                                 <h3 className="text-xl font-bold mb-4 flex items-center justify-between">
                                                     <span>{week.days[0]}일 - {week.days[week.days.length - 1]}일</span>
@@ -1828,7 +1675,7 @@
                                         ))}
                                     </div>
                                 )}
-
+                                
                                 {/* 월별 뷰 */}
                                 {viewMode === 'monthly' && (
                                     <div className="glass-effect rounded-2xl p-8">
@@ -1862,7 +1709,7 @@
                             <div>
                                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
                                     <div className="p-2 bg-blue-500/20 rounded-lg">
-                                        <Icon icon="TrendingUp" size={28} style={{ color: '#00C6FF' }} />
+                                        <Icon icon={TrendingUp} size={28} style={{ color: '#00C6FF' }} />
                                     </div>
                                     주간 매출 합계
                                 </h2>
@@ -1997,47 +1844,12 @@
                                 </div>
                             </div>
                         </div>
-
-                        {/* 모달들 */}
-                        {showAddSaleModal && <AddSaleModal />}
-                        {showSearchResultModal && <SearchResultModal />}
                     </div>
                 </div>
             );
         };
 
-        // 루트 앱 컴포넌트
-        const App = () => {
-            const [user, setUser] = useState(null);
-            const [loading, setLoading] = useState(true);
-
-            useEffect(() => {
-                const unsubscribe = window.firebase.onAuthStateChanged(window.firebase.auth, (user) => {
-                    setUser(user);
-                    setLoading(false);
-                });
-
-                return () => unsubscribe();
-            }, []);
-
-            if (loading) {
-                return (
-                    <div className="main-container" style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minHeight: '100vh'
-                    }}>
-                        <div className="loading-spinner" style={{width: '50px', height: '50px'}}></div>
-                    </div>
-                );
-            }
-
-            return user ? <NeoFitPayCalc user={user} /> : <LoginComponent onLogin={setUser} />;
-        };
-
-        // 앱 렌더링
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<NeoFitPayCalc />);
     </script>
 </body>
 </html>
