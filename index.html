@@ -955,7 +955,7 @@
                     setModalData(prev => ({ ...prev, price: formatNumberWithCommas(finalPrice) }));
                 }, [modalData.healthProduct, modalData.pilatesProduct, modalData.neofitProduct, modalData.lockerType, modalData.lockerPeriod, modalData.discount]);
                 
-                const handleSubmit = (e) => {
+                const handleSubmit = async (e) => {
                     e.preventDefault();
                     const selectedProducts = [];
                     if (modalData.healthProduct) selectedProducts.push('헬스: ' + modalData.healthProduct);
@@ -983,20 +983,26 @@
                         })
                     };
                     
-                    setSalesData(prev => {
-                        const currentData = prev[dateKey] || { amount: 0, approved: false, details: [] };
-                        const newDetails = [...(currentData.details || []), newDetail];
-                        const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
-                        
-                        return {
-                            ...prev,
-                            [dateKey]: {
-                                ...currentData,
-                                details: newDetails,
-                                amount: newTotalAmount
-                            }
-                        };
-                    });
+                    // Firebase에 저장
+                    const currentData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+                    const newDetails = [...(currentData.details || []), newDetail];
+                    const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
+                    
+                    const updatedData = {
+                        ...currentData,
+                        details: newDetails,
+                        amount: newTotalAmount,
+                        date: dateKey
+                    };
+                    
+                    try {
+                        await salesService.saveSalesData(dateKey, updatedData);
+                        console.log('매출 데이터 Firebase 저장 완료:', dateKey);
+                    } catch (error) {
+                        console.error('Firebase 저장 실패:', error);
+                        alert('데이터 저장에 실패했습니다. 다시 시도해주세요.');
+                        return;
+                    }
                     
                     setShowAddSaleModal(false);
                     setModalData({ customerName: '', healthProduct: '', pilatesProduct: '', neofitProduct: '', lockerProduct: '', lockerType: '', lockerPeriod: '', price: '', discount: '' });
