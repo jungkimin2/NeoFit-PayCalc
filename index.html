@@ -1049,6 +1049,7 @@
                                     <label className="block text-sm font-semibold mb-2 text-gray-300">할인 금액</label>
                                     <input
                                         type="text"
+                                        inputMode="numeric"
                                         value={modalData.discount}
                                         onChange={(e) => {
                                             const value = e.target.value.replace(/[^0-9]/g, '');
@@ -1060,6 +1061,7 @@
                                         }}
                                         className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
                                         placeholder="할인 금액을 입력하세요"
+                                        style={{ fontSize: '16px' }}
                                     />
                                 </div>
                                 
@@ -1584,7 +1586,7 @@
                                                                 }));
                                                             }}
                                                             placeholder="비밀번호"
-                                                            className="glass-effect rounded-xl px-2 sm:px-4 py-3 w-20 sm:flex-1 focus:border-green-400 focus:outline-none text-sm sm:text-base transition-all text-center"
+                                                            className="glass-effect rounded-xl px-2 sm:px-3 py-3 w-20 sm:w-32 focus:border-green-400 focus:outline-none text-sm sm:text-base transition-all text-center"
                                                             onKeyPress={(e) => {
                                                                 if (e.key === 'Enter') {
                                                                     handleAdminApproval(day);
@@ -1619,7 +1621,7 @@
                                                                     }));
                                                                 }}
                                                                 placeholder="수정 비밀번호"
-                                                                className="glass-effect rounded-xl px-2 sm:px-4 py-3 w-24 sm:flex-1 focus:border-orange-400 focus:outline-none text-sm sm:text-base transition-all text-center"
+                                                                className="glass-effect rounded-xl px-2 sm:px-3 py-3 w-24 sm:w-36 focus:border-orange-400 focus:outline-none text-sm sm:text-base transition-all text-center"
                                                                 onKeyPress={(e) => {
                                                                     if (e.key === 'Enter') {
                                                                         handleEditMode(day);
