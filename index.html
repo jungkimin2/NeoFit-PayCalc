@@ -7,6 +7,12 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Firebase SDK 추가 -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     <style>
         * {
@@ -338,6 +344,80 @@
         const Package = "package";
         const CreditCard = "credit-card";
 
+        // Firebase 초기화
+        const firebaseConfig = {
+            apiKey: "AIzaSyA7QFT8mJtSAe4T5dl6xIcNpN-8KiF1WJ0",
+            authDomain: "neofit-paycalc.firebaseapp.com",
+            projectId: "neofit-paycalc",
+            storageBucket: "neofit-paycalc.firebasestorage.app",
+            messagingSenderId: "482350739592",
+            appId: "1:482350739592:web:35ef96eb8deebf8e0bb57f"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // 인증 서비스
+        const authService = {
+            loginWithEmail: async (email, password) => {
+                try {
+                    const result = await auth.signInWithEmailAndPassword(email, password);
+                    return { success: true, user: result.user };
+                } catch (error) {
+                    console.error('Login error:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            logout: async () => {
+                try {
+                    await auth.signOut();
+                    return { success: true };
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            subscribeToAuthChanges: (callback) => {
+                return auth.onAuthStateChanged(callback);
+            }
+        };
+
+        // 매출 서비스
+        const salesService = {
+            saveSalesData: async (dateKey, data) => {
+                try {
+                    await db.collection('sales').doc(dateKey).set({
+                        ...data,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    return { success: true };
+                } catch (error) {
+                    console.error('Save error:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            subscribeToMonthData: (year, month, callback) => {
+                const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+                const endDate = `${year}-${String(month + 1).padStart(2, '0')}-31`;
+                
+                return db.collection('sales')
+                    .where('date', '>=', startDate)
+                    .where('date', '<=', endDate)
+                    .onSnapshot((snapshot) => {
+                        const data = {};
+                        snapshot.forEach(doc => {
+                            data[doc.id] = doc.data();
+                        });
+                        callback(data);
+                    });
+            }
+        };
+
         // 환경 변수 또는 설정
         const CONFIG = {
             ADMIN_PASSWORD: '4405', // 관리자 비밀번호
@@ -366,33 +446,7 @@
         };
 
         const NeoFitPayCalc = () => {
-            const [salesData, setSalesData] = useState(() => {
-                try {
-                    // localStorage 먼저 확인
-                    const localSaved = localStorage.getItem('neofitSalesData');
-                    if (localSaved) {
-                        return JSON.parse(localSaved);
-                    }
-                    
-                    // sessionStorage 확인 (fallback)
-                    const sessionSaved = sessionStorage.getItem('neofitSalesData');
-                    if (sessionSaved) {
-                        return JSON.parse(sessionSaved);
-                    }
-                    
-                    // window.localStorage 확인 (iOS 대응)
-                    if (window.localStorage) {
-                        const windowSaved = window.localStorage.getItem('neofitSalesData');
-                        if (windowSaved) {
-                            return JSON.parse(windowSaved);
-                        }
-                    }
-                } catch (e) {
-                    console.error('데이터 로드 실패:', e);
-                }
-                
-                return {};
-            });
+            const [salesData, setSalesData] = useState({});
             const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
             const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
             const [approvalPasswords, setApprovalPasswords] = useState({});
@@ -410,23 +464,38 @@
             const [showSearchResultModal, setShowSearchResultModal] = useState(false);
             const [searchResults, setSearchResults] = useState([]);
             
-            // localStorage에 데이터 저장 (모바일 대응 강화)
+            // Firebase 인증 상태
+            const [user, setUser] = useState(null);
+            const [isLoading, setIsLoading] = useState(true);
+            const [loginError, setLoginError] = useState('');
+            
+            // Firebase 인증 상태 모니터링
             React.useEffect(() => {
-                try {
-                    // localStorage 저장
-                    localStorage.setItem('neofitSalesData', JSON.stringify(salesData));
+                const unsubscribe = authService.subscribeToAuthChanges((user) => {
+                    setUser(user);
+                    setIsLoading(false);
+                });
+                
+                return () => unsubscribe();
+            }, []);
+            
+            // Firebase 데이터 동기화
+            React.useEffect(() => {
+                if (user) {
+                    const unsubscribe = salesService.subscribeToMonthData(
+                        selectedYear,
+                        selectedMonth,
+                        (data) => {
+                            setSalesData(prevData => ({
+                                ...prevData,
+                                ...data
+                            }));
+                        }
+                    );
                     
-                    // sessionStorage에도 백업
-                    sessionStorage.setItem('neofitSalesData', JSON.stringify(salesData));
-                    
-                    // iOS Safari Private Mode 대응
-                    if (window.localStorage) {
-                        window.localStorage.setItem('neofitSalesData', JSON.stringify(salesData));
-                    }
-                } catch (e) {
-                    console.error('데이터 저장 실패:', e);
+                    return () => unsubscribe();
                 }
-            }, [salesData]);
+            }, [user, selectedYear, selectedMonth]);
 
             // 상품 목록
             const healthProducts = ['1개월', '3개월', '6개월', '12개월'];
@@ -491,7 +560,7 @@
             };
 
             // 매출 상세 내역 추가
-            const addSaleDetail = (day) => {
+            const addSaleDetail = async (day) => {
                 const dayCustomerName = customerName[day] || '';
                 const daySelectedProduct = selectedProducts[day] || '';
                 const dayCustomPrice = customPrices[day] || 0;
@@ -514,20 +583,19 @@
                     })
                 };
 
-                setSalesData(prev => {
-                    const currentData = prev[dateKey] || { amount: 0, approved: false, details: [] };
-                    const newDetails = [...(currentData.details || []), newDetail];
-                    const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
-
-                    return {
-                        ...prev,
-                        [dateKey]: {
-                            ...currentData,
-                            details: newDetails,
-                            amount: newTotalAmount
-                        }
-                    };
-                });
+                // Firebase에 저장
+                const currentData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+                const newDetails = [...(currentData.details || []), newDetail];
+                const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
+                
+                const updatedData = {
+                    ...currentData,
+                    details: newDetails,
+                    amount: newTotalAmount,
+                    date: dateKey
+                };
+                
+                await salesService.saveSalesData(dateKey, updatedData);
 
                 // 해당 날짜 입력 필드 초기화
                 setCustomerName(prev => ({ ...prev, [day]: '' }));
@@ -538,37 +606,37 @@
             };
 
             // 매출 상세 삭제
-            const removeSaleDetail = (day, detailId) => {
+            const removeSaleDetail = async (day, detailId) => {
                 const dateKey = getDateKey(day);
-                setSalesData(prev => {
-                    const currentData = prev[dateKey] || { amount: 0, approved: false, details: [] };
-                    const newDetails = currentData.details.filter(detail => detail.id !== detailId);
-                    const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
-
-                    return {
-                        ...prev,
-                        [dateKey]: {
-                            ...currentData,
-                            details: newDetails,
-                            amount: newTotalAmount
-                        }
-                    };
-                });
+                const currentData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+                const newDetails = currentData.details.filter(detail => detail.id !== detailId);
+                const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
+                
+                const updatedData = {
+                    ...currentData,
+                    details: newDetails,
+                    amount: newTotalAmount,
+                    date: dateKey
+                };
+                
+                await salesService.saveSalesData(dateKey, updatedData);
             };
 
             // 관리자 승인 처리
-            const handleAdminApproval = (day) => {
+            const handleAdminApproval = async (day) => {
                 const dateKey = getDateKey(day);
                 const password = approvalPasswords[dateKey] || '';
                 
                 if (password === CONFIG.ADMIN_PASSWORD) {
-                    setSalesData(prev => ({
-                        ...prev,
-                        [dateKey]: {
-                            ...prev[dateKey],
-                            approved: true
-                        }
-                    }));
+                    const currentData = salesData[dateKey] || {};
+                    const updatedData = {
+                        ...currentData,
+                        approved: true,
+                        date: dateKey
+                    };
+                    
+                    await salesService.saveSalesData(dateKey, updatedData);
+                    
                     setApprovalPasswords(prev => ({
                         ...prev,
                         [dateKey]: ''
@@ -1160,6 +1228,71 @@
                 );
             };
 
+            // 로그인 화면
+            if (isLoading) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br text-gray-100 flex items-center justify-center">
+                        <div className="text-2xl">로딩 중...</div>
+                    </div>
+                );
+            }
+            
+            if (!user) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br text-gray-100 flex items-center justify-center p-4">
+                        <div className="w-full max-w-md">
+                            <div className="glass-effect rounded-2xl p-8">
+                                <h1 className="text-3xl font-bold text-center mb-8">
+                                    <span className="text-green-400">NeoFit</span> PayCalc
+                                </h1>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    setLoginError('');
+                                    const email = e.target.email.value;
+                                    const password = e.target.password.value;
+                                    const result = await authService.loginWithEmail(email, password);
+                                    if (!result.success) {
+                                        setLoginError(result.error);
+                                    }
+                                }} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">이메일</label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            className="glass-effect rounded-lg px-4 py-3 w-full text-white placeholder-gray-500 focus:border-green-400 focus:outline-none"
+                                            placeholder="gio7603@gmail.com"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">비밀번호</label>
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            className="glass-effect rounded-lg px-4 py-3 w-full text-white placeholder-gray-500 focus:border-green-400 focus:outline-none"
+                                            placeholder="비밀번호 입력"
+                                            required
+                                        />
+                                    </div>
+                                    {loginError && (
+                                        <div className="text-red-400 text-sm text-center">
+                                            {loginError}
+                                        </div>
+                                    )}
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 hover-glow"
+                                    >
+                                        로그인
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            
             return (
                 <div className="min-h-screen bg-gradient-to-br text-gray-100 p-4">
                     <div className="max-w-7xl mx-auto">
@@ -1168,11 +1301,17 @@
                         {/* 검색 결과 모달 */}
                         {showSearchResultModal && <SearchResultModal />}
                         {/* 헤더 */}
-                        <div className="text-center mb-8 sm:mb-10">
+                        <div className="text-center mb-8 sm:mb-10 relative">
                             <h1 className="text-3xl sm:text-5xl font-black mb-2 sm:mb-3" style={{ color: '#00FF88' }}>
                                 NeoFit PayCalc
                             </h1>
                             <p className="text-gray-400 text-base sm:text-lg">네오핏 급여 계산기</p>
+                            <button
+                                onClick={() => authService.logout()}
+                                className="absolute top-0 right-0 glass-effect hover:border-red-400 rounded-lg px-4 py-2 text-sm transition-all text-white"
+                            >
+                                로그아웃
+                            </button>
                         </div>
                         
                         {/* 회원 검색 */}
