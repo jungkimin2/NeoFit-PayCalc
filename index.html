@@ -399,13 +399,28 @@
             resetPassword: async (email) => {
                 try {
                     console.log('비밀번호 재설정 시도 - 이메일:', email);
-                    await auth.sendPasswordResetEmail(email);
+                    // 액션 코드 설정 추가
+                    const actionCodeSettings = {
+                        url: window.location.origin, // 현재 도메인으로 리다이렉트
+                        handleCodeInApp: true // 앱에서 처리
+                    };
+                    await auth.sendPasswordResetEmail(email, actionCodeSettings);
                     console.log('비밀번호 재설정 이메일 발송 성공');
                     return { success: true };
                 } catch (error) {
                     console.error('Password reset error:', error);
                     console.error('Error code:', error.code);
                     console.error('Error message:', error.message);
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            confirmPasswordReset: async (code, newPassword) => {
+                try {
+                    await auth.confirmPasswordReset(code, newPassword);
+                    return { success: true };
+                } catch (error) {
+                    console.error('Password confirm error:', error);
                     return { success: false, error: error.message };
                 }
             }
@@ -498,6 +513,12 @@
             const [resetEmail, setResetEmail] = useState('');
             const [resetMessage, setResetMessage] = useState('');
             
+            // 비밀번호 재설정 페이지 상태
+            const [isResetMode, setIsResetMode] = useState(false);
+            const [oobCode, setOobCode] = useState('');
+            const [newPassword, setNewPassword] = useState('');
+            const [confirmNewPassword, setConfirmNewPassword] = useState('');
+            
             // Firebase 인증 상태 모니터링
             React.useEffect(() => {
                 const unsubscribe = authService.subscribeToAuthChanges((user) => {
@@ -506,6 +527,18 @@
                 });
                 
                 return () => unsubscribe();
+            }, []);
+            
+            // URL 파라미터 확인 (비밀번호 재설정 링크)
+            React.useEffect(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const mode = urlParams.get('mode');
+                const code = urlParams.get('oobCode');
+                
+                if (mode === 'resetPassword' && code) {
+                    setIsResetMode(true);
+                    setOobCode(code);
+                }
             }, []);
             
             // Firebase 데이터 동기화
@@ -1268,6 +1301,117 @@
                 return (
                     <div className="min-h-screen bg-gradient-to-br text-gray-100 flex items-center justify-center">
                         <div className="text-2xl">로딩 중...</div>
+                    </div>
+                );
+            }
+            
+            // 비밀번호 재설정 모드
+            if (isResetMode && !user) {
+                return (
+                    <div className="min-h-screen" style={{ backgroundColor: '#1a1a1a' }}>
+                        <div className="flex items-center justify-center min-h-screen p-4">
+                            <div className="w-full" style={{ maxWidth: '440px' }}>
+                                <div style={{ 
+                                    backgroundColor: '#2d2d2d',
+                                    borderRadius: '16px',
+                                    padding: '40px',
+                                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)'
+                                }}>
+                                    <div className="text-center mb-8">
+                                        <h1 className="text-3xl font-bold mb-1">
+                                            <span style={{ color: '#00FF88' }}>NeoFit</span>
+                                            <span className="text-white ml-1">Pay</span>
+                                        </h1>
+                                        <p className="text-gray-400 text-sm">새 비밀번호 설정</p>
+                                    </div>
+                                    <form onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        setResetMessage('');
+                                        
+                                        if (newPassword !== confirmNewPassword) {
+                                            setResetMessage('비밀번호가 일치하지 않습니다.');
+                                            return;
+                                        }
+                                        
+                                        if (newPassword.length < 6) {
+                                            setResetMessage('비밀번호는 최소 6자 이상이어야 합니다.');
+                                            return;
+                                        }
+                                        
+                                        const result = await authService.confirmPasswordReset(oobCode, newPassword);
+                                        if (result.success) {
+                                            setResetMessage('비밀번호가 성공적으로 변경되었습니다!');
+                                            setTimeout(() => {
+                                                // URL 파라미터 제거하고 로그인 페이지로
+                                                window.location.href = window.location.origin;
+                                            }, 2000);
+                                        } else {
+                                            let errorMsg = result.error;
+                                            if (result.error.includes('expired')) {
+                                                errorMsg = '링크가 만료되었습니다. 다시 요청해주세요.';
+                                            } else if (result.error.includes('invalid')) {
+                                                errorMsg = '유효하지 않은 링크입니다.';
+                                            }
+                                            setResetMessage(errorMsg);
+                                        }
+                                    }} className="space-y-5">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2 text-gray-300">새 비밀번호</label>
+                                            <input
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="w-full px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-all"
+                                                style={{
+                                                    backgroundColor: '#3d3d3d',
+                                                    borderRadius: '12px',
+                                                    border: '1px solid #4d4d4d',
+                                                    fontSize: '16px'
+                                                }}
+                                                placeholder="새 비밀번호 (6자 이상)"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2 text-gray-300">비밀번호 확인</label>
+                                            <input
+                                                type="password"
+                                                value={confirmNewPassword}
+                                                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                                className="w-full px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-all"
+                                                style={{
+                                                    backgroundColor: '#3d3d3d',
+                                                    borderRadius: '12px',
+                                                    border: '1px solid #4d4d4d',
+                                                    fontSize: '16px'
+                                                }}
+                                                placeholder="비밀번호 다시 입력"
+                                                required
+                                            />
+                                        </div>
+                                        {resetMessage && (
+                                            <div className={`text-sm text-center ${resetMessage.includes('성공') ? 'text-green-400' : 'text-red-400'}`}>
+                                                {resetMessage}
+                                            </div>
+                                        )}
+                                        <button
+                                            type="submit"
+                                            className="w-full text-white font-medium py-3 px-4 transition-all duration-200 hover:opacity-90"
+                                            style={{
+                                                backgroundColor: '#00FF88',
+                                                borderRadius: '12px',
+                                                fontSize: '16px',
+                                                border: 'none',
+                                                color: '#000',
+                                                marginTop: '24px'
+                                            }}
+                                        >
+                                            비밀번호 변경
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 );
             }
