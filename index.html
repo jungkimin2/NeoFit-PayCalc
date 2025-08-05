@@ -398,10 +398,14 @@
             
             resetPassword: async (email) => {
                 try {
+                    console.log('비밀번호 재설정 시도 - 이메일:', email);
                     await auth.sendPasswordResetEmail(email);
+                    console.log('비밀번호 재설정 이메일 발송 성공');
                     return { success: true };
                 } catch (error) {
                     console.error('Password reset error:', error);
+                    console.error('Error code:', error.code);
+                    console.error('Error message:', error.message);
                     return { success: false, error: error.message };
                 }
             }
