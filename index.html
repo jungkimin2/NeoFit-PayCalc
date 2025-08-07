@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeoFit Pay - 네오핏 급여 계산기</title>
+    <title>NeoFit PayCalc - 네오핏 급여 계산기</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -394,35 +394,6 @@
             
             subscribeToAuthChanges: (callback) => {
                 return auth.onAuthStateChanged(callback);
-            },
-            
-            resetPassword: async (email) => {
-                try {
-                    console.log('비밀번호 재설정 시도 - 이메일:', email);
-                    // 액션 코드 설정 추가
-                    const actionCodeSettings = {
-                        url: window.location.origin, // 현재 도메인으로 리다이렉트
-                        handleCodeInApp: true // 앱에서 처리
-                    };
-                    await auth.sendPasswordResetEmail(email, actionCodeSettings);
-                    console.log('비밀번호 재설정 이메일 발송 성공');
-                    return { success: true };
-                } catch (error) {
-                    console.error('Password reset error:', error);
-                    console.error('Error code:', error.code);
-                    console.error('Error message:', error.message);
-                    return { success: false, error: error.message };
-                }
-            },
-            
-            confirmPasswordReset: async (code, newPassword) => {
-                try {
-                    await auth.confirmPasswordReset(code, newPassword);
-                    return { success: true };
-                } catch (error) {
-                    console.error('Password confirm error:', error);
-                    return { success: false, error: error.message };
-                }
             }
         };
 
@@ -509,15 +480,6 @@
             const [isLoading, setIsLoading] = useState(true);
             const [loginError, setLoginError] = useState('');
             const [isSignUpMode, setIsSignUpMode] = useState(false);
-            const [showResetPassword, setShowResetPassword] = useState(false);
-            const [resetEmail, setResetEmail] = useState('');
-            const [resetMessage, setResetMessage] = useState('');
-            
-            // 비밀번호 재설정 페이지 상태
-            const [isResetMode, setIsResetMode] = useState(false);
-            const [oobCode, setOobCode] = useState('');
-            const [newPassword, setNewPassword] = useState('');
-            const [confirmNewPassword, setConfirmNewPassword] = useState('');
             
             // Firebase 인증 상태 모니터링
             React.useEffect(() => {
@@ -527,18 +489,6 @@
                 });
                 
                 return () => unsubscribe();
-            }, []);
-            
-            // URL 파라미터 확인 (비밀번호 재설정 링크)
-            React.useEffect(() => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const mode = urlParams.get('mode');
-                const code = urlParams.get('oobCode');
-                
-                if (mode === 'resetPassword' && code) {
-                    setIsResetMode(true);
-                    setOobCode(code);
-                }
             }, []);
             
             // Firebase 데이터 동기화
@@ -601,18 +551,6 @@
                 '락커 11개월': 110000,
                 '락커 12개월': 120000
             };
-
-            // viewMode 변경 시 강제 리렌더링 (모바일 대응)
-            React.useEffect(() => {
-                console.log('View mode changed to:', viewMode);
-                // 모바일에서 상태 변경이 UI에 반영되도록 강제
-            }, [viewMode]);
-
-            // employeeType 변경 시 강제 리렌더링 (모바일 대응)
-            React.useEffect(() => {
-                console.log('Employee type changed to:', employeeType);
-                console.log('New incentive rate:', getIncentiveRate(monthlyTotal));
-            }, [employeeType]);
 
             // 날짜 키 생성
             const getDateKey = (day) => {
@@ -811,10 +749,10 @@
                 return rates[employeeTypeToUse][0];
             };
 
-            const monthlyTotal = React.useMemo(() => calculateMonthlySales(), [salesData, selectedMonth, selectedYear]);
-            const incentiveRate = React.useMemo(() => getIncentiveRate(monthlyTotal), [monthlyTotal, employeeType]);
-            const incentiveAmount = React.useMemo(() => monthlyTotal * (incentiveRate / 100), [monthlyTotal, incentiveRate]);
-            const weeklySales = React.useMemo(() => calculateWeeklySales(), [salesData, selectedMonth, selectedYear]);
+            const monthlyTotal = calculateMonthlySales();
+            const incentiveRate = getIncentiveRate(monthlyTotal);
+            const incentiveAmount = monthlyTotal * (incentiveRate / 100);
+            const weeklySales = calculateWeeklySales();
             
             // 오늘 매출 계산
             const getTodaySales = React.useCallback(() => {
@@ -1317,210 +1255,9 @@
                 );
             }
             
-            // 비밀번호 재설정 모드
-            if (isResetMode && !user) {
-                return (
-                    <div className="min-h-screen" style={{ backgroundColor: '#1a1a1a' }}>
-                        <div className="flex items-center justify-center min-h-screen p-4">
-                            <div className="w-full" style={{ maxWidth: '440px' }}>
-                                <div style={{ 
-                                    backgroundColor: '#2d2d2d',
-                                    borderRadius: '16px',
-                                    padding: '40px',
-                                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)'
-                                }}>
-                                    <div className="text-center mb-8">
-                                        <h1 className="text-3xl font-bold mb-1">
-                                            <span style={{ color: '#00FF88' }}>NeoFit</span>
-                                            <span className="text-white ml-1">Pay</span>
-                                        </h1>
-                                        <p className="text-gray-400 text-sm">새 비밀번호 설정</p>
-                                    </div>
-                                    <form onSubmit={async (e) => {
-                                        e.preventDefault();
-                                        setResetMessage('');
-                                        
-                                        if (newPassword !== confirmNewPassword) {
-                                            setResetMessage('비밀번호가 일치하지 않습니다.');
-                                            return;
-                                        }
-                                        
-                                        if (newPassword.length < 6) {
-                                            setResetMessage('비밀번호는 최소 6자 이상이어야 합니다.');
-                                            return;
-                                        }
-                                        
-                                        const result = await authService.confirmPasswordReset(oobCode, newPassword);
-                                        if (result.success) {
-                                            setResetMessage('비밀번호가 성공적으로 변경되었습니다!');
-                                            setTimeout(() => {
-                                                // URL 파라미터 제거하고 로그인 페이지로
-                                                window.location.href = window.location.origin;
-                                            }, 2000);
-                                        } else {
-                                            let errorMsg = result.error;
-                                            if (result.error.includes('expired')) {
-                                                errorMsg = '링크가 만료되었습니다. 다시 요청해주세요.';
-                                            } else if (result.error.includes('invalid')) {
-                                                errorMsg = '유효하지 않은 링크입니다.';
-                                            }
-                                            setResetMessage(errorMsg);
-                                        }
-                                    }} className="space-y-5">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2 text-gray-300">새 비밀번호</label>
-                                            <input
-                                                type="password"
-                                                value={newPassword}
-                                                onChange={(e) => setNewPassword(e.target.value)}
-                                                className="w-full px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-all"
-                                                style={{
-                                                    backgroundColor: '#3d3d3d',
-                                                    borderRadius: '12px',
-                                                    border: '1px solid #4d4d4d',
-                                                    fontSize: '16px'
-                                                }}
-                                                placeholder="새 비밀번호 (6자 이상)"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2 text-gray-300">비밀번호 확인</label>
-                                            <input
-                                                type="password"
-                                                value={confirmNewPassword}
-                                                onChange={(e) => setConfirmNewPassword(e.target.value)}
-                                                className="w-full px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-all"
-                                                style={{
-                                                    backgroundColor: '#3d3d3d',
-                                                    borderRadius: '12px',
-                                                    border: '1px solid #4d4d4d',
-                                                    fontSize: '16px'
-                                                }}
-                                                placeholder="비밀번호 다시 입력"
-                                                required
-                                            />
-                                        </div>
-                                        {resetMessage && (
-                                            <div className={`text-sm text-center ${resetMessage.includes('성공') ? 'text-green-400' : 'text-red-400'}`}>
-                                                {resetMessage}
-                                            </div>
-                                        )}
-                                        <button
-                                            type="submit"
-                                            className="w-full text-white font-medium py-3 px-4 transition-all duration-200 hover:opacity-90"
-                                            style={{
-                                                backgroundColor: '#00FF88',
-                                                borderRadius: '12px',
-                                                fontSize: '16px',
-                                                border: 'none',
-                                                color: '#000',
-                                                marginTop: '24px'
-                                            }}
-                                        >
-                                            비밀번호 변경
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-            
             if (!user) {
                 return (
                     <div className="min-h-screen" style={{ backgroundColor: '#1a1a1a' }}>
-                        {/* 비밀번호 재설정 모달 */}
-                        {showResetPassword && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                                <div className="w-full" style={{ maxWidth: '400px' }}>
-                                    <div style={{
-                                        backgroundColor: '#2d2d2d',
-                                        borderRadius: '16px',
-                                        padding: '32px',
-                                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)'
-                                    }}>
-                                        <h2 className="text-xl font-bold text-white mb-4">비밀번호 재설정</h2>
-                                        <p className="text-gray-400 text-sm mb-6">
-                                            가입하신 이메일 주소를 입력하시면 비밀번호 재설정 링크를 보내드립니다.
-                                        </p>
-                                        <form onSubmit={async (e) => {
-                                            e.preventDefault();
-                                            setResetMessage('');
-                                            const email = e.target.resetEmail.value;
-                                            
-                                            const result = await authService.resetPassword(email);
-                                            if (result.success) {
-                                                setResetMessage('이메일을 발송했습니다. 이메일을 확인해주세요.');
-                                                setTimeout(() => {
-                                                    setShowResetPassword(false);
-                                                    setResetMessage('');
-                                                }, 3000);
-                                            } else {
-                                                let errorMsg = result.error;
-                                                if (result.error.includes('user-not-found')) {
-                                                    errorMsg = '등록되지 않은 이메일입니다.';
-                                                } else if (result.error.includes('invalid-email')) {
-                                                    errorMsg = '유효하지 않은 이메일 형식입니다.';
-                                                }
-                                                setResetMessage(errorMsg);
-                                            }
-                                        }}>
-                                            <input
-                                                type="email"
-                                                name="resetEmail"
-                                                className="w-full px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-all mb-4"
-                                                style={{
-                                                    backgroundColor: '#3d3d3d',
-                                                    borderRadius: '12px',
-                                                    border: '1px solid #4d4d4d',
-                                                    fontSize: '16px'
-                                                }}
-                                                placeholder="이메일 주소 입력"
-                                                required
-                                            />
-                                            {resetMessage && (
-                                                <div className={`text-sm text-center mb-4 ${resetMessage.includes('발송했습니다') ? 'text-green-400' : 'text-red-400'}`}>
-                                                    {resetMessage}
-                                                </div>
-                                            )}
-                                            <div className="flex gap-3">
-                                                <button
-                                                    type="submit"
-                                                    className="flex-1 text-white font-medium py-3 px-4 transition-all duration-200 hover:opacity-90"
-                                                    style={{
-                                                        backgroundColor: '#00FF88',
-                                                        borderRadius: '12px',
-                                                        fontSize: '16px',
-                                                        color: '#000'
-                                                    }}
-                                                >
-                                                    재설정 링크 보내기
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setShowResetPassword(false);
-                                                        setResetMessage('');
-                                                    }}
-                                                    className="flex-1 py-3 px-4 transition-all duration-200 hover:opacity-80"
-                                                    style={{
-                                                        backgroundColor: 'transparent',
-                                                        border: '1px solid #4d4d4d',
-                                                        borderRadius: '12px',
-                                                        fontSize: '16px',
-                                                        color: '#999'
-                                                    }}
-                                                >
-                                                    취소
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                         <div className="flex items-center justify-center min-h-screen p-4">
                             <div className="w-full" style={{ maxWidth: '440px' }}>
                                 <div style={{ 
@@ -1532,7 +1269,7 @@
                                     <div className="text-center mb-8">
                                         <h1 className="text-3xl font-bold mb-1">
                                             <span style={{ color: '#00FF88' }}>NeoFit</span>
-                                            <span className="text-white ml-1">Pay</span>
+                                            <span className="text-white ml-1">PayCalc</span>
                                         </h1>
                                         <p className="text-gray-400 text-sm">네오핏 급여 계산기</p>
                                     </div>
@@ -1589,16 +1326,6 @@
                                                     placeholder="비밀번호 입력"
                                                     required
                                                 />
-                                            </div>
-                                            <div className="text-right mt-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowResetPassword(true)}
-                                                    className="text-gray-400 hover:text-gray-300 text-sm transition-colors"
-                                                    style={{ background: 'none', border: 'none', padding: 0 }}
-                                                >
-                                                    비밀번호를 잊으셨나요?
-                                                </button>
                                             </div>
                                             {loginError && (
                                                 <div className="text-red-400 text-sm text-center py-2">
@@ -1773,7 +1500,7 @@
                         {/* 헤더 */}
                         <div className="text-center mb-8 sm:mb-10 relative">
                             <h1 className="text-3xl sm:text-5xl font-black mb-2 sm:mb-3" style={{ color: '#00FF88' }}>
-                                NeoFit Pay
+                                NeoFit PayCalc
                             </h1>
                             <p className="text-gray-400 text-base sm:text-lg">네오핏 급여 계산기</p>
                             <button
@@ -1807,11 +1534,7 @@
                         {/* 뷰 모드 선택 */}
                         <div className="flex justify-center gap-2 mb-6">
                             <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    console.log('Changing to daily view');
-                                    setViewMode('daily');
-                                }}
+                                onClick={() => setViewMode('daily')}
                                 className={`px-4 py-2 rounded-lg font-semibold transition-all glass-effect ${
                                     viewMode === 'daily' 
                                         ? 'text-green-400 border-green-500 shadow-lg scale-105' 
@@ -1826,11 +1549,7 @@
                                 일별
                             </button>
                             <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    console.log('Changing to weekly view');
-                                    setViewMode('weekly');
-                                }}
+                                onClick={() => setViewMode('weekly')}
                                 className={`px-4 py-2 rounded-lg font-semibold transition-all glass-effect ${
                                     viewMode === 'weekly' 
                                         ? 'text-green-400 border-green-500 shadow-lg scale-105' 
@@ -1845,11 +1564,7 @@
                                 주별
                             </button>
                             <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    console.log('Changing to monthly view');
-                                    setViewMode('monthly');
-                                }}
+                                onClick={() => setViewMode('monthly')}
                                 className={`px-4 py-2 rounded-lg font-semibold transition-all glass-effect ${
                                     viewMode === 'monthly' 
                                         ? 'text-green-400 border-green-500 shadow-lg scale-105' 
@@ -2195,7 +1910,7 @@
                                                 )}
                                                 
                                                 {!dayData.approved ? (
-                                                    <div className="flex gap-2 w-full">
+                                                    <div className="flex gap-2">
                                                         <input
                                                             type="password"
                                                             value={approvalPasswords[dateKey] || ''}
@@ -2207,7 +1922,7 @@
                                                                 }));
                                                             }}
                                                             placeholder="PW"
-                                                            className="glass-effect rounded-xl px-2 py-3 flex-1 max-w-[120px] sm:max-w-[160px] focus:border-green-400 focus:outline-none text-xs sm:text-sm transition-all text-center"
+                                                            className="glass-effect rounded-xl px-1 sm:px-3 py-3 w-10 sm:w-32 focus:border-green-400 focus:outline-none text-xs sm:text-base transition-all text-center"
                                                             style={{ fontSize: '16px' }}
                                                             onKeyPress={(e) => {
                                                                 if (e.key === 'Enter') {
@@ -2217,7 +1932,7 @@
                                                         />
                                                         <button
                                                             onClick={() => handleAdminApproval(day)}
-                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white"
+                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-3 sm:px-6 py-3 text-xs sm:text-base font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white"
                                                         >
                                                             승인
                                                         </button>
@@ -2231,7 +1946,7 @@
                                                             <Icon icon={Check} size={18} />
                                                             정산완료
                                                         </button>
-                                                        <div className="flex gap-2 w-full">
+                                                        <div className="flex gap-2">
                                                             <input
                                                                 type="password"
                                                                 value={editPasswords[dateKey] || ''}
@@ -2243,7 +1958,7 @@
                                                                     }));
                                                                 }}
                                                                 placeholder="PW"
-                                                                className="glass-effect rounded-xl px-2 py-3 flex-1 max-w-[120px] sm:max-w-[160px] focus:border-orange-400 focus:outline-none text-xs sm:text-sm transition-all text-center"
+                                                                className="glass-effect rounded-xl px-1 sm:px-3 py-3 w-10 sm:w-36 focus:border-orange-400 focus:outline-none text-xs sm:text-base transition-all text-center"
                                                                 style={{ fontSize: '16px' }}
                                                                 onKeyPress={(e) => {
                                                                     if (e.key === 'Enter') {
@@ -2253,7 +1968,7 @@
                                                             />
                                                             <button
                                                                 onClick={() => handleEditMode(day)}
-                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex items-center gap-1 hover:shadow-lg text-white"
+                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-2 sm:px-6 py-3 text-xs sm:text-base font-semibold transition-all whitespace-nowrap flex items-center gap-1 hover:shadow-lg text-white"
                                                             >
                                                                 <Icon icon={Edit} size={16} />
                                                                 <span className="hidden sm:inline">수정</span>
