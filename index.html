@@ -554,12 +554,20 @@
 
             // 날짜 키 생성
             const getDateKey = (day) => {
-                // NaN 체크 추가
-                if (isNaN(selectedYear) || isNaN(selectedMonth) || isNaN(day)) {
-                    console.error('Invalid date values:', { selectedYear, selectedMonth, day });
-                    return '';
+                // NaN 체크 및 기본값 처리
+                const year = isNaN(selectedYear) ? new Date().getFullYear() : selectedYear;
+                const month = isNaN(selectedMonth) ? new Date().getMonth() : selectedMonth;
+                const dayNum = isNaN(day) ? 1 : day;
+                
+                // 유효성 검사
+                if (year < 2000 || year > 3000 || month < 0 || month > 11 || dayNum < 1 || dayNum > 31) {
+                    console.error('Invalid date values:', { year, month, dayNum });
+                    // 기본값 반환
+                    const today = new Date();
+                    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                 }
-                return `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                return `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
             };
 
             // 날짜별 입력 폼 토글
@@ -687,48 +695,77 @@
 
             // 월의 일수 계산
             const getDaysInMonth = () => {
-                // NaN 체크 추가
-                if (isNaN(selectedYear) || isNaN(selectedMonth)) {
-                    console.error('Invalid year or month:', { selectedYear, selectedMonth });
-                    return 31; // 기본값 반환
+                try {
+                    // 기본값 처리
+                    const year = isNaN(selectedYear) ? new Date().getFullYear() : selectedYear;
+                    const month = isNaN(selectedMonth) ? new Date().getMonth() : selectedMonth;
+                    
+                    // 유효성 검사
+                    if (year < 2000 || year > 3000 || month < 0 || month > 11) {
+                        console.error('Invalid year or month:', { year, month });
+                        return 31; // 기본값 반환
+                    }
+                    
+                    const days = new Date(year, month + 1, 0).getDate();
+                    return isNaN(days) ? 31 : days;
+                } catch (error) {
+                    console.error('Error in getDaysInMonth:', error);
+                    return 31;
                 }
-                return new Date(selectedYear, selectedMonth + 1, 0).getDate();
             };
 
             // 주간 매출 계산 (승인된 매출만 계산)
             const calculateWeeklySales = () => {
-                const weeks = [];
-                const daysInMonth = getDaysInMonth();
-                let currentWeek = [];
-                let weekTotal = 0;
+                try {
+                    const weeks = [];
+                    
+                    // selectedYear과 selectedMonth 유효성 검사
+                    if (isNaN(selectedYear) || isNaN(selectedMonth) || selectedYear < 2000 || selectedYear > 3000 || selectedMonth < 0 || selectedMonth > 11) {
+                        console.warn('Invalid year or month for weekly calculation:', { selectedYear, selectedMonth });
+                        return [];
+                    }
+                    
+                    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+                    
+                    if (!daysInMonth || daysInMonth <= 0 || isNaN(daysInMonth)) {
+                        return [];
+                    }
 
-                // daysInMonth가 유효하지 않으면 빈 배열 반환
-                if (!daysInMonth || daysInMonth <= 0) {
+                    let currentWeek = [];
+                    let weekTotal = 0;
+
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        // 안전한 dateKey 생성
+                        const dateKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        
+                        if (salesData && salesData[dateKey]) {
+                            const dayData = salesData[dateKey];
+                            // 승인된 매출만 계산
+                            if (dayData.approved && typeof dayData.amount === 'number' && !isNaN(dayData.amount)) {
+                                weekTotal += dayData.amount;
+                            }
+                        }
+                        
+                        currentWeek.push(day);
+
+                        // 주 마감 또는 월 마지막 날
+                        if (currentWeek.length === 7 || day === daysInMonth) {
+                            if (currentWeek.length > 0) {
+                                weeks.push({
+                                    days: [...currentWeek],
+                                    total: weekTotal
+                                });
+                            }
+                            currentWeek = [];
+                            weekTotal = 0;
+                        }
+                    }
+
+                    return weeks;
+                } catch (error) {
+                    console.error('Error in calculateWeeklySales:', error);
                     return [];
                 }
-
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dateKey = getDateKey(day);
-                    const dayData = salesData[dateKey] || { amount: 0, approved: false };
-                    // 승인된 매출만 계산, NaN 체크 추가
-                    if (dayData.approved && !isNaN(dayData.amount)) {
-                        weekTotal += Number(dayData.amount) || 0;
-                    }
-                    currentWeek.push(day);
-
-                    if (currentWeek.length === 7 || day === daysInMonth) {
-                        if (currentWeek.length > 0) {
-                            weeks.push({
-                                days: [...currentWeek],
-                                total: isNaN(weekTotal) ? 0 : weekTotal
-                            });
-                        }
-                        currentWeek = [];
-                        weekTotal = 0;
-                    }
-                }
-
-                return weeks;
             };
 
             // 월간 총매출 계산 (승인된 매출만 계산)
