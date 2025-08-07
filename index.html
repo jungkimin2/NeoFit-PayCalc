@@ -702,8 +702,8 @@
                 let currentWeek = [];
                 let weekTotal = 0;
 
-                // salesData가 없거나 비어있으면 빈 배열 반환
-                if (!salesData || Object.keys(salesData).length === 0) {
+                // daysInMonth가 유효하지 않으면 빈 배열 반환
+                if (!daysInMonth || daysInMonth <= 0) {
                     return [];
                 }
 
@@ -717,10 +717,12 @@
                     currentWeek.push(day);
 
                     if (currentWeek.length === 7 || day === daysInMonth) {
-                        weeks.push({
-                            days: [...currentWeek],
-                            total: weekTotal
-                        });
+                        if (currentWeek.length > 0) {
+                            weeks.push({
+                                days: [...currentWeek],
+                                total: isNaN(weekTotal) ? 0 : weekTotal
+                            });
+                        }
                         currentWeek = [];
                         weekTotal = 0;
                     }
@@ -794,9 +796,9 @@
                 // 현재 선택된 년월이 오늘과 같은지 확인
                 if (today.getMonth() === selectedMonth && today.getFullYear() === selectedYear) {
                     const currentWeek = weeklySales.find(week => {
-                        return week.days.includes(today.getDate());
+                        return week && week.days && Array.isArray(week.days) && week.days.includes(today.getDate());
                     });
-                    return currentWeek ? currentWeek.total : 0;
+                    return currentWeek && !isNaN(currentWeek.total) ? currentWeek.total : 0;
                 }
                 return 0;
             }, [weeklySales, selectedMonth, selectedYear]);
@@ -2057,30 +2059,37 @@
                                 {/* 주별 뷰 */}
                                 {viewMode === 'weekly' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {calculateWeeklySales().map((week, index) => (
-                                            <div key={index} className="glass-effect rounded-2xl p-6 hover:scale-[1.02] transition-all">
-                                                <h3 className="text-xl font-bold mb-4 flex items-center justify-between">
-                                                    <span>{week.days[0]}일 - {week.days[week.days.length - 1]}일</span>
-                                                    <span className="text-2xl" style={{ color: '#00C6FF' }}>
-                                                        {week.total.toLocaleString()}원
-                                                    </span>
-                                                </h3>
-                                                <div className="space-y-2">
-                                                    {week.days.map(day => {
-                                                        const dateKey = getDateKey(day);
-                                                        const dayData = salesData[dateKey] || { amount: 0, approved: false };
-                                                        return (
-                                                            <div key={day} className="flex justify-between items-center py-2 border-b border-gray-700">
-                                                                <span className="text-gray-400">{selectedMonth + 1}월 {day}일</span>
-                                                                <span className={dayData.approved ? 'text-green-400' : 'text-gray-500'}>
-                                                                    {dayData.amount.toLocaleString()}원
-                                                                </span>
-                                                            </div>
-                                                        );
-                                                    })}
+                                        {calculateWeeklySales().map((week, index) => {
+                                            // week.days가 없거나 비어있으면 건너뛰기
+                                            if (!week || !week.days || week.days.length === 0) {
+                                                return null;
+                                            }
+                                            
+                                            return (
+                                                <div key={index} className="glass-effect rounded-2xl p-6 hover:scale-[1.02] transition-all">
+                                                    <h3 className="text-xl font-bold mb-4 flex items-center justify-between">
+                                                        <span>{week.days[0]}일 - {week.days[week.days.length - 1]}일</span>
+                                                        <span className="text-2xl" style={{ color: '#00C6FF' }}>
+                                                            {(week.total || 0).toLocaleString()}원
+                                                        </span>
+                                                    </h3>
+                                                    <div className="space-y-2">
+                                                        {week.days.map(day => {
+                                                            const dateKey = getDateKey(day);
+                                                            const dayData = salesData[dateKey] || { amount: 0, approved: false };
+                                                            return (
+                                                                <div key={day} className="flex justify-between items-center py-2 border-b border-gray-700">
+                                                                    <span className="text-gray-400">{selectedMonth + 1}월 {day}일</span>
+                                                                    <span className={dayData.approved ? 'text-green-400' : 'text-gray-500'}>
+                                                                        {(dayData.amount || 0).toLocaleString()}원
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                                 
@@ -2123,18 +2132,25 @@
                                 </h2>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {weeklySales.map((week, index) => (
-                                        <div key={index} className="glass-effect rounded-2xl p-5 hover:scale-105 transition-all duration-300">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm text-gray-400 mb-2">
-                                                    {week.days[0]}일 - {week.days[week.days.length - 1]}일
-                                                </span>
-                                                <span className="text-2xl font-black" style={{ color: '#00C6FF' }}>
-                                                    {(week.total || 0).toLocaleString()}원
-                                                </span>
+                                    {weeklySales.map((week, index) => {
+                                        // week.days가 없거나 비어있으면 건너뛰기
+                                        if (!week || !week.days || week.days.length === 0) {
+                                            return null;
+                                        }
+                                        
+                                        return (
+                                            <div key={index} className="glass-effect rounded-2xl p-5 hover:scale-105 transition-all duration-300">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm text-gray-400 mb-2">
+                                                        {week.days[0]}일 - {week.days[week.days.length - 1]}일
+                                                    </span>
+                                                    <span className="text-2xl font-black" style={{ color: '#00C6FF' }}>
+                                                        {(week.total || 0).toLocaleString()}원
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
