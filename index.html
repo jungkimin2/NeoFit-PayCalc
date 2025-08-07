@@ -2195,7 +2195,7 @@
                                                 )}
                                                 
                                                 {!dayData.approved ? (
-                                                    <div className="flex gap-2">
+                                                    <div className="flex gap-2 w-full">
                                                         <input
                                                             type="password"
                                                             value={approvalPasswords[dateKey] || ''}
@@ -2207,7 +2207,7 @@
                                                                 }));
                                                             }}
                                                             placeholder="PW"
-                                                            className="glass-effect rounded-xl px-0.5 sm:px-2 py-3 w-12 sm:w-20 focus:border-green-400 focus:outline-none text-xs sm:text-sm transition-all text-center"
+                                                            className="glass-effect rounded-xl px-2 py-3 flex-1 focus:border-green-400 focus:outline-none text-xs sm:text-sm transition-all text-center"
                                                             style={{ fontSize: '16px' }}
                                                             onKeyPress={(e) => {
                                                                 if (e.key === 'Enter') {
@@ -2217,7 +2217,7 @@
                                                         />
                                                         <button
                                                             onClick={() => handleAdminApproval(day)}
-                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white"
+                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white"
                                                         >
                                                             승인
                                                         </button>
@@ -2231,7 +2231,7 @@
                                                             <Icon icon={Check} size={18} />
                                                             정산완료
                                                         </button>
-                                                        <div className="flex gap-2">
+                                                        <div className="flex gap-2 w-full">
                                                             <input
                                                                 type="password"
                                                                 value={editPasswords[dateKey] || ''}
@@ -2243,7 +2243,7 @@
                                                                     }));
                                                                 }}
                                                                 placeholder="PW"
-                                                                className="glass-effect rounded-xl px-0.5 sm:px-2 py-3 w-12 sm:w-20 focus:border-orange-400 focus:outline-none text-xs sm:text-sm transition-all text-center"
+                                                                className="glass-effect rounded-xl px-2 py-3 flex-1 focus:border-orange-400 focus:outline-none text-xs sm:text-sm transition-all text-center"
                                                                 style={{ fontSize: '16px' }}
                                                                 onKeyPress={(e) => {
                                                                     if (e.key === 'Enter') {
@@ -2253,7 +2253,7 @@
                                                             />
                                                             <button
                                                                 onClick={() => handleEditMode(day)}
-                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex items-center gap-1 hover:shadow-lg text-white"
+                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex items-center gap-1 hover:shadow-lg text-white"
                                                             >
                                                                 <Icon icon={Edit} size={16} />
                                                                 <span className="hidden sm:inline">수정</span>
