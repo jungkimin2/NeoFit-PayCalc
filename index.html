@@ -602,6 +602,18 @@
                 '락커 12개월': 120000
             };
 
+            // viewMode 변경 시 강제 리렌더링 (모바일 대응)
+            React.useEffect(() => {
+                console.log('View mode changed to:', viewMode);
+                // 모바일에서 상태 변경이 UI에 반영되도록 강제
+            }, [viewMode]);
+
+            // employeeType 변경 시 강제 리렌더링 (모바일 대응)
+            React.useEffect(() => {
+                console.log('Employee type changed to:', employeeType);
+                console.log('New incentive rate:', getIncentiveRate(monthlyTotal));
+            }, [employeeType]);
+
             // 날짜 키 생성
             const getDateKey = (day) => {
                 return `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -799,10 +811,10 @@
                 return rates[employeeTypeToUse][0];
             };
 
-            const monthlyTotal = calculateMonthlySales();
-            const incentiveRate = getIncentiveRate(monthlyTotal);
-            const incentiveAmount = monthlyTotal * (incentiveRate / 100);
-            const weeklySales = calculateWeeklySales();
+            const monthlyTotal = React.useMemo(() => calculateMonthlySales(), [salesData, selectedMonth, selectedYear]);
+            const incentiveRate = React.useMemo(() => getIncentiveRate(monthlyTotal), [monthlyTotal, employeeType]);
+            const incentiveAmount = React.useMemo(() => monthlyTotal * (incentiveRate / 100), [monthlyTotal, incentiveRate]);
+            const weeklySales = React.useMemo(() => calculateWeeklySales(), [salesData, selectedMonth, selectedYear]);
             
             // 오늘 매출 계산
             const getTodaySales = React.useCallback(() => {
@@ -1795,7 +1807,11 @@
                         {/* 뷰 모드 선택 */}
                         <div className="flex justify-center gap-2 mb-6">
                             <button
-                                onClick={() => setViewMode('daily')}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    console.log('Changing to daily view');
+                                    setViewMode('daily');
+                                }}
                                 className={`px-4 py-2 rounded-lg font-semibold transition-all glass-effect ${
                                     viewMode === 'daily' 
                                         ? 'text-green-400 border-green-500 shadow-lg scale-105' 
@@ -1810,7 +1826,11 @@
                                 일별
                             </button>
                             <button
-                                onClick={() => setViewMode('weekly')}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    console.log('Changing to weekly view');
+                                    setViewMode('weekly');
+                                }}
                                 className={`px-4 py-2 rounded-lg font-semibold transition-all glass-effect ${
                                     viewMode === 'weekly' 
                                         ? 'text-green-400 border-green-500 shadow-lg scale-105' 
@@ -1825,7 +1845,11 @@
                                 주별
                             </button>
                             <button
-                                onClick={() => setViewMode('monthly')}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    console.log('Changing to monthly view');
+                                    setViewMode('monthly');
+                                }}
                                 className={`px-4 py-2 rounded-lg font-semibold transition-all glass-effect ${
                                     viewMode === 'monthly' 
                                         ? 'text-green-400 border-green-500 shadow-lg scale-105' 
@@ -2183,7 +2207,7 @@
                                                                 }));
                                                             }}
                                                             placeholder="PW"
-                                                            className="glass-effect rounded-xl px-1 sm:px-2 py-3 w-16 sm:w-24 focus:border-green-400 focus:outline-none text-xs sm:text-base transition-all text-center"
+                                                            className="glass-effect rounded-xl px-0.5 sm:px-2 py-3 w-12 sm:w-20 focus:border-green-400 focus:outline-none text-xs sm:text-sm transition-all text-center"
                                                             style={{ fontSize: '16px' }}
                                                             onKeyPress={(e) => {
                                                                 if (e.key === 'Enter') {
@@ -2193,7 +2217,7 @@
                                                         />
                                                         <button
                                                             onClick={() => handleAdminApproval(day)}
-                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-3 sm:px-6 py-3 text-xs sm:text-base font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white"
+                                                            className="glass-effect border-blue-500 hover:border-blue-400 rounded-xl px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap hover:shadow-lg text-white"
                                                         >
                                                             승인
                                                         </button>
@@ -2219,7 +2243,7 @@
                                                                     }));
                                                                 }}
                                                                 placeholder="PW"
-                                                                className="glass-effect rounded-xl px-1 sm:px-2 py-3 w-16 sm:w-24 focus:border-orange-400 focus:outline-none text-xs sm:text-base transition-all text-center"
+                                                                className="glass-effect rounded-xl px-0.5 sm:px-2 py-3 w-12 sm:w-20 focus:border-orange-400 focus:outline-none text-xs sm:text-sm transition-all text-center"
                                                                 style={{ fontSize: '16px' }}
                                                                 onKeyPress={(e) => {
                                                                     if (e.key === 'Enter') {
@@ -2229,7 +2253,7 @@
                                                             />
                                                             <button
                                                                 onClick={() => handleEditMode(day)}
-                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-2 sm:px-6 py-3 text-xs sm:text-base font-semibold transition-all whitespace-nowrap flex items-center gap-1 hover:shadow-lg text-white"
+                                                                className="glass-effect border-orange-500 hover:border-orange-400 rounded-xl px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex items-center gap-1 hover:shadow-lg text-white"
                                                             >
                                                                 <Icon icon={Edit} size={16} />
                                                                 <span className="hidden sm:inline">수정</span>
