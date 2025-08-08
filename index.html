@@ -413,6 +413,19 @@
                 }
             },
             
+            loadSalesData: async (dateKey) => {
+                try {
+                    const doc = await db.collection('sales').doc(dateKey).get();
+                    if (doc.exists) {
+                        return doc.data();
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('Load error:', error);
+                    return null;
+                }
+            },
+            
             subscribeToMonthData: (year, month, callback) => {
                 const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
                 const endDate = `${year}-${String(month + 1).padStart(2, '0')}-31`;
@@ -480,6 +493,25 @@
             // Firebase 인증 상태
             const [user, setUser] = useState(null);
             const [isLoading, setIsLoading] = useState(true);
+            
+            // Firebase에서 실시간 데이터 구독
+            React.useEffect(() => {
+                if (!user) return;
+                
+                const unsubscribe = salesService.subscribeToMonthData(
+                    selectedYear, 
+                    selectedMonth, 
+                    (data) => {
+                        setSalesData(data);
+                    }
+                );
+                
+                return () => {
+                    if (unsubscribe) {
+                        unsubscribe();
+                    }
+                };
+            }, [user, selectedYear, selectedMonth]);
             const [loginError, setLoginError] = useState('');
             const [isSignUpMode, setIsSignUpMode] = useState(false);
             
