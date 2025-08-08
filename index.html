@@ -1328,23 +1328,39 @@
                         setIsLoading(true);
                         const yearData = {};
                         
-                        // 현재 연도와 전년도의 모든 월 데이터를 간단하게 로드
-                        const startYear = yearView - 1;
-                        const endYear = yearView;
+                        // 기존 salesData를 먼저 복사
+                        Object.keys(salesData).forEach(key => {
+                            if (salesData[key]) {
+                                yearData[key] = salesData[key];
+                            }
+                        });
                         
-                        for (let year = startYear; year <= endYear; year++) {
-                            for (let month = 0; month < 12; month++) {
-                                const monthStr = String(month + 1).padStart(2, '0');
-                                const daysInMonth = new Date(year, month + 1, 0).getDate();
-                                
-                                // 각 날짜별로 데이터 로드
-                                for (let day = 1; day <= daysInMonth; day++) {
-                                    const dayStr = String(day).padStart(2, '0');
-                                    const dateKey = `${year}-${monthStr}-${dayStr}`;
-                                    
+                        // 전년도 12월 데이터만 추가로 로드 (전월 대비 계산용)
+                        const prevYear = yearView - 1;
+                        const prevMonth = 11; // 12월
+                        const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+                        
+                        for (let day = 1; day <= daysInPrevMonth; day++) {
+                            const dateKey = `${prevYear}-12-${String(day).padStart(2, '0')}`;
+                            try {
+                                const data = await salesService.loadSalesData(dateKey);
+                                if (data) {
+                                    yearData[dateKey] = data;
+                                }
+                            } catch (error) {
+                                // 데이터가 없는 경우 무시
+                            }
+                        }
+                        
+                        // 현재 연도 1월 데이터도 로드 (12월의 다음달 비교용)
+                        if (yearView === new Date().getFullYear()) {
+                            const daysInJan = new Date(yearView, 1, 0).getDate();
+                            for (let day = 1; day <= daysInJan; day++) {
+                                const dateKey = `${yearView}-01-${String(day).padStart(2, '0')}`;
+                                if (!yearData[dateKey]) {
                                     try {
                                         const data = await salesService.loadSalesData(dateKey);
-                                        if (data && data.amount > 0) {
+                                        if (data) {
                                             yearData[dateKey] = data;
                                         }
                                     } catch (error) {
@@ -1358,8 +1374,10 @@
                         setIsLoading(false);
                     };
                     
-                    loadYearData();
-                }, [yearView]);
+                    if (showCalendarModal) {
+                        loadYearData();
+                    }
+                }, [yearView, showCalendarModal, salesData]);
                 
                 // 1년치 월별 캘린더 생성
                 const renderMonthCalendar = (month) => {
@@ -1370,8 +1388,8 @@
                     let monthTotal = 0;
                     let prevMonthTotal = 0;
                     
-                    // 데이터 소스 결정 (로딩 완료 후 yearSalesData 사용, 아니면 salesData)
-                    const dataSource = (!isLoading && Object.keys(yearSalesData).length > 0) ? yearSalesData : salesData;
+                    // 데이터 소스 결정 - yearSalesData가 있으면 사용, 없으면 salesData
+                    const dataSource = Object.keys(yearSalesData).length > 0 ? yearSalesData : salesData;
                     
                     // 월 총 매출 계산 (승인된 것만)
                     for (let day = 1; day <= daysInMonth; day++) {
@@ -1457,7 +1475,7 @@
                                         }
                                         
                                         const dateKey = `${yearView}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                                        const currentDataSource = (!isLoading && Object.keys(yearSalesData).length > 0) ? yearSalesData : salesData;
+                                        const currentDataSource = Object.keys(yearSalesData).length > 0 ? yearSalesData : salesData;
                                         const dayData = currentDataSource[dateKey] || { amount: 0, approved: false };
                                         const date = new Date(yearView, month, day);
                                         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
