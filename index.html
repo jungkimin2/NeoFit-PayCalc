@@ -1335,39 +1335,37 @@
                             }
                         });
                         
-                        // 전년도 12월 데이터만 추가로 로드 (전월 대비 계산용)
-                        const prevYear = yearView - 1;
-                        const prevMonth = 11; // 12월
-                        const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
-                        
-                        for (let day = 1; day <= daysInPrevMonth; day++) {
-                            const dateKey = `${prevYear}-12-${String(day).padStart(2, '0')}`;
-                            try {
-                                const data = await salesService.loadSalesData(dateKey);
-                                if (data) {
-                                    yearData[dateKey] = data;
-                                }
-                            } catch (error) {
-                                // 데이터가 없는 경우 무시
-                            }
-                        }
-                        
-                        // 현재 연도 1월 데이터도 로드 (12월의 다음달 비교용)
-                        if (yearView === new Date().getFullYear()) {
-                            const daysInJan = new Date(yearView, 1, 0).getDate();
-                            for (let day = 1; day <= daysInJan; day++) {
-                                const dateKey = `${yearView}-01-${String(day).padStart(2, '0')}`;
-                                if (!yearData[dateKey]) {
-                                    try {
+                        // 현재 연도와 전년도의 모든 데이터를 로드
+                        try {
+                            // 전년도 전체 데이터 로드
+                            for (let month = 0; month < 12; month++) {
+                                const daysInMonth = new Date(yearView - 1, month + 1, 0).getDate();
+                                for (let day = 1; day <= daysInMonth; day++) {
+                                    const dateKey = `${yearView - 1}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                    if (!yearData[dateKey]) {
                                         const data = await salesService.loadSalesData(dateKey);
                                         if (data) {
                                             yearData[dateKey] = data;
                                         }
-                                    } catch (error) {
-                                        // 데이터가 없는 경우 무시
                                     }
                                 }
                             }
+                            
+                            // 현재 연도 전체 데이터 로드
+                            for (let month = 0; month < 12; month++) {
+                                const daysInMonth = new Date(yearView, month + 1, 0).getDate();
+                                for (let day = 1; day <= daysInMonth; day++) {
+                                    const dateKey = `${yearView}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                    if (!yearData[dateKey]) {
+                                        const data = await salesService.loadSalesData(dateKey);
+                                        if (data) {
+                                            yearData[dateKey] = data;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.log('Error loading year data:', error);
                         }
                         
                         setYearSalesData(yearData);
@@ -1377,7 +1375,7 @@
                     if (showCalendarModal) {
                         loadYearData();
                     }
-                }, [yearView, showCalendarModal, salesData]);
+                }, [yearView, showCalendarModal]);
                 
                 // 1년치 월별 캘린더 생성
                 const renderMonthCalendar = (month) => {
