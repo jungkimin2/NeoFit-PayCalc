@@ -784,18 +784,21 @@
             };
 
             // 수정 모드 처리
-            const handleEditMode = (day) => {
+            const handleEditMode = async (day) => {
                 const dateKey = getDateKey(day);
                 const password = editPasswords[dateKey] || '';
                 
                 if (password === CONFIG.ADMIN_PASSWORD) {
-                    setSalesData(prev => ({
-                        ...prev,
-                        [dateKey]: {
-                            ...prev[dateKey],
-                            approved: false
-                        }
-                    }));
+                    const currentData = salesData[dateKey] || {};
+                    const updatedData = {
+                        ...currentData,
+                        approved: false,
+                        date: dateKey
+                    };
+                    
+                    // Firebase에 저장
+                    await salesService.saveSalesData(dateKey, updatedData);
+                    
                     setEditPasswords(prev => ({
                         ...prev,
                         [dateKey]: ''
