@@ -122,6 +122,28 @@
             animation: slideIn 0.3s ease-out;
         }
         
+        @keyframes neonGreenPulse {
+            0%, 100% {
+                text-shadow: 0 0 10px #00FF88, 0 0 20px #00FF88, 0 0 30px #00FF88, 0 0 40px #00FF88;
+                box-shadow: 0 0 20px rgba(0, 255, 136, 0.5), inset 0 0 20px rgba(0, 255, 136, 0.1);
+            }
+            50% {
+                text-shadow: 0 0 15px #00FF88, 0 0 25px #00FF88, 0 0 35px #00FF88, 0 0 50px #00FF88;
+                box-shadow: 0 0 30px rgba(0, 255, 136, 0.7), inset 0 0 30px rgba(0, 255, 136, 0.2);
+            }
+        }
+        
+        @keyframes neonBluePulse {
+            0%, 100% {
+                text-shadow: 0 0 10px #00C6FF, 0 0 20px #00C6FF, 0 0 30px #00C6FF, 0 0 40px #00C6FF;
+                box-shadow: 0 0 20px rgba(0, 198, 255, 0.5), inset 0 0 20px rgba(0, 198, 255, 0.1);
+            }
+            50% {
+                text-shadow: 0 0 15px #00C6FF, 0 0 25px #00C6FF, 0 0 35px #00C6FF, 0 0 50px #00C6FF;
+                box-shadow: 0 0 30px rgba(0, 198, 255, 0.7), inset 0 0 30px rgba(0, 198, 255, 0.2);
+            }
+        }
+        
         .fixed {
             position: fixed;
         }
@@ -498,7 +520,10 @@
             React.useEffect(() => {
                 if (!user) return;
                 
-                // 현재 월 데이터 구독
+                // 월이 변경될 때 데이터 초기화
+                setSalesData({});
+                
+                // 현재 월 데이터 실시간 구독
                 const unsubscribe = salesService.subscribeToMonthData(
                     selectedYear, 
                     selectedMonth, 
@@ -510,37 +535,26 @@
                     }
                 );
                 
-                // 전월 데이터도 로드 (전월 대비 계산용)
-                const loadPrevMonthData = async () => {
-                    const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
-                    const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
-                    const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
-                    
-                    const prevMonthData = {};
-                    for (let day = 1; day <= daysInPrevMonth; day++) {
-                        const dateKey = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        try {
-                            const data = await salesService.loadSalesData(dateKey);
-                            if (data) {
-                                prevMonthData[dateKey] = data;
-                            }
-                        } catch (error) {
-                            console.log('Error loading prev month data:', error);
-                        }
-                    }
-                    
-                    setSalesData(prevData => ({
-                        ...prevData,
-                        ...prevMonthData
-                    }));
-                };
+                // 전월 데이터도 구독 (전월 대비 계산용)
+                const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+                const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
                 
-                loadPrevMonthData();
+                const prevUnsubscribe = salesService.subscribeToMonthData(
+                    prevYear,
+                    prevMonth,
+                    (data) => {
+                        setSalesData(prevData => ({
+                            ...prevData,
+                            ...data
+                        }));
+                    }
+                );
                 
                 return () => {
-                    if (unsubscribe) {
-                        unsubscribe();
-                    }
+                    // 구독 해제
+                    setSalesData({});
+                    if (unsubscribe) unsubscribe();
+                    if (prevUnsubscribe) prevUnsubscribe();
                 };
             }, [user, selectedYear, selectedMonth]);
             const [loginError, setLoginError] = useState('');
@@ -576,20 +590,53 @@
 
             // 상품 목록
             const healthProducts = ['1개월', '3개월', '6개월', '12개월'];
-            const pilatesProducts = ['3개월 (24회 주 2회)', '6개월 (48회 주 2회)', '12개월 (96회 주 2회)'];
-            const neofitProducts = ['1개월', '3개월', '6개월', '12개월'];
+            const pilatesProducts = [
+                '3개월 (24회 주 2회)', 
+                '6개월 (48회 주 2회)', 
+                '12개월 (96회 주 2회)',
+                '3개월 (36회 주 3회)',
+                '6개월 (72회 주 3회)',
+                '12개월 (144회 주 3회)'
+            ];
+            const neofitProducts = [
+                '네오핏 3회 체험권',
+                '30일 기간권',
+                '180일 기간권',
+                '90일 기간권',
+                '8회 주 2회',
+                '24회 주 2회',
+                '48회 주 2회',
+                '12회 주 3회',
+                '36회 주 3회',
+                '72회 주 3회'
+            ];
             const lockerProducts = ['운동복', '락커'];
             const lockerPeriods = ['1개월', '2개월', '3개월', '4개월', '5개월', '6개월', '7개월', '8개월', '9개월', '10개월', '11개월', '12개월'];
             
             // 상품 가격표
             const productPrices = {
+                // 헬스 이용권
                 '1개월': 110000,
                 '3개월': 270000,
                 '6개월': 420000,
                 '12개월': 600000,
+                // 네오핏 이용권
+                '네오핏 3회 체험권': 60000,
+                '30일 기간권': 390000,
+                '180일 기간권': 1980000,
+                '90일 기간권': 1080000,
+                '8회 주 2회': 264000,
+                '24회 주 2회': 744000,
+                '48회 주 2회': 1392000,
+                '12회 주 3회': 348000,
+                '36회 주 3회': 972000,
+                '72회 주 3회': 1800000,
                 '3개월 (24회 주 2회)': 384000,
                 '6개월 (48회 주 2회)': 624000,
                 '12개월 (96회 주 2회)': 960000,
+                '3개월 (36회 주 3회)': 540000,
+                '6개월 (72회 주 3회)': 864000,
+                '12개월 (144회 주 3회)': 1296000,
                 // 운동복/락커 가격 (1개월부터 12개월까지)
                 '운동복 1개월': 10000,
                 '운동복 2개월': 20000,
@@ -1201,11 +1248,20 @@
                                         className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
                                     >
                                         <option value="">필라테스 이용권 선택</option>
-                                        {pilatesProducts.map(product => (
-                                            <option key={product} value={product}>
-                                                {product} - {productPrices[product].toLocaleString()}원
-                                            </option>
-                                        ))}
+                                        <optgroup label="주 2회 상품">
+                                            {pilatesProducts.slice(0, 3).map(product => (
+                                                <option key={product} value={product}>
+                                                    {product} - {productPrices[product].toLocaleString()}원
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                        <optgroup label="주 3회 상품">
+                                            {pilatesProducts.slice(3, 6).map(product => (
+                                                <option key={product} value={product}>
+                                                    {product} - {productPrices[product].toLocaleString()}원
+                                                </option>
+                                            ))}
+                                        </optgroup>
                                     </select>
                                 </div>
                                 
@@ -1217,11 +1273,30 @@
                                         className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
                                     >
                                         <option value="">네오핏 이용권 선택</option>
-                                        {neofitProducts.map(product => (
-                                            <option key={product} value={product}>
-                                                {product} - {productPrices[product].toLocaleString()}원
-                                            </option>
-                                        ))}
+                                        <option value={neofitProducts[0]}>
+                                            {neofitProducts[0]} - {productPrices[neofitProducts[0]].toLocaleString()}원
+                                        </option>
+                                        <optgroup label="네오핏 무제한권">
+                                            {neofitProducts.slice(1, 4).map(product => (
+                                                <option key={product} value={product}>
+                                                    {product} - {productPrices[product].toLocaleString()}원
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                        <optgroup label="네오핏 주 2회">
+                                            {neofitProducts.slice(4, 7).map(product => (
+                                                <option key={product} value={product}>
+                                                    {product} - {productPrices[product].toLocaleString()}원
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                        <optgroup label="네오핏 주 3회">
+                                            {neofitProducts.slice(7, 10).map(product => (
+                                                <option key={product} value={product}>
+                                                    {product} - {productPrices[product].toLocaleString()}원
+                                                </option>
+                                            ))}
+                                        </optgroup>
                                     </select>
                                 </div>
                                 
@@ -1385,6 +1460,15 @@
                 const [yearSalesData, setYearSalesData] = useState({});
                 const [isLoading, setIsLoading] = useState(false);
                 
+                // 모달이 열릴 때 현재 연도로 초기화
+                React.useEffect(() => {
+                    if (showCalendarModal) {
+                        setYearView(selectedYear);
+                        setYearSalesData({}); // 초기화
+                        setIsLoading(true); // 로딩 시작
+                    }
+                }, [showCalendarModal]);
+                
                 // salesData가 변경될 때마다 yearSalesData 업데이트
                 React.useEffect(() => {
                     setYearSalesData(prevData => ({
@@ -1393,49 +1477,69 @@
                     }));
                 }, [salesData]);
                 
-                // 전월 데이터 로드 (전월 대비 계산용)
+                // 전체 연도 데이터 로드 (전월 포함) - Firebase 구독 사용
                 React.useEffect(() => {
-                    if (!showCalendarModal) return;
+                    if (!showCalendarModal || !user) return;
                     
-                    const loadMonthlyData = async () => {
-                        setIsLoading(true);
-                        const tempData = { ...salesData };
-                        
-                        try {
-                            // 각 월의 전월 데이터만 로드 (성능 최적화)
-                            for (let month = 0; month < 12; month++) {
-                                const prevMonth = month === 0 ? 11 : month - 1;
-                                const prevYear = month === 0 ? yearView - 1 : yearView;
-                                
-                                // 전월의 마지막 5일만 샘플로 로드 (전체 합계 계산용)
-                                const startDate = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-01`;
-                                const endDate = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-31`;
-                                
-                                // Firebase에서 직접 쿼리
-                                const snapshot = await db.collection('sales')
-                                    .where('date', '>=', startDate)
-                                    .where('date', '<=', endDate)
-                                    .get();
-                                
-                                snapshot.forEach(doc => {
-                                    tempData[doc.id] = doc.data();
-                                });
+                    const unsubscribes = [];
+                    setIsLoading(true);
+                    
+                    // 12개월 모든 데이터를 구독
+                    for (let month = 0; month < 12; month++) {
+                        // 현재 월 데이터 구독
+                        const unsubscribe = salesService.subscribeToMonthData(
+                            yearView,
+                            month,
+                            (data) => {
+                                setYearSalesData(prevData => ({
+                                    ...prevData,
+                                    ...data
+                                }));
                             }
-                        } catch (error) {
-                            console.error('Error loading monthly data:', error);
-                        }
+                        );
+                        if (unsubscribe) unsubscribes.push(unsubscribe);
                         
-                        setYearSalesData(tempData);
-                        setIsLoading(false);
+                        // 전월 데이터도 구독 (전월 대비 계산용)
+                        const prevMonth = month === 0 ? 11 : month - 1;
+                        const prevYear = month === 0 ? yearView - 1 : yearView;
+                        
+                        const prevUnsubscribe = salesService.subscribeToMonthData(
+                            prevYear,
+                            prevMonth,
+                            (data) => {
+                                setYearSalesData(prevData => ({
+                                    ...prevData,
+                                    ...data
+                                }));
+                            }
+                        );
+                        if (prevUnsubscribe) unsubscribes.push(prevUnsubscribe);
+                    }
+                    
+                    // 로딩 완료
+                    setTimeout(() => setIsLoading(false), 1000);
+                    
+                    // cleanup
+                    return () => {
+                        unsubscribes.forEach(unsubscribe => {
+                            if (unsubscribe) unsubscribe();
+                        });
                     };
-                    
-                    // 딜레이를 주어 무한 루프 방지
-                    const timer = setTimeout(() => {
-                        loadMonthlyData();
-                    }, 100);
-                    
-                    return () => clearTimeout(timer);
-                }, [yearView, showCalendarModal]);
+                }, [yearView, showCalendarModal, user]);
+                
+                // 매출 금액에 따른 색상 결정 함수 (배경색 제거)
+                const getAmountColor = (amount) => {
+                    return ''; // 모든 배경색 제거
+                };
+                
+                const getAmountTextColor = (amount) => {
+                    if (amount === 0) return '#6b7280'; // 회색
+                    if (amount < 500000) return '#93c5fd'; // 연한 파랑
+                    if (amount < 1000000) return '#6ee7b7'; // 연한 초록
+                    if (amount < 2000000) return '#fcd34d'; // 노랑
+                    if (amount < 3000000) return '#fb923c'; // 주황
+                    return '#f87171'; // 빨강
+                };
                 
                 // 1년치 월별 캘린더 생성
                 const renderMonthCalendar = (month) => {
@@ -1549,6 +1653,10 @@
                                             return amount.toLocaleString();
                                         };
                                         
+                                        const dayAmount = hasApprovedData ? dayData.amount : 0;
+                                        const bgColor = getAmountColor(dayAmount);
+                                        const textColor = getAmountTextColor(dayAmount);
+                                        
                                         const dayStyle = {
                                             height: '35px',
                                             display: 'flex',
@@ -1559,7 +1667,7 @@
                                             borderRadius: '3px',
                                             transition: 'all 0.2s',
                                             padding: '2px',
-                                            backgroundColor: hasApprovedData ? 'rgba(34, 197, 94, 0.15)' : '',
+                                            backgroundColor: '',
                                             outline: isToday ? '1px solid #10b981' : 'none'
                                         };
                                         
@@ -1567,8 +1675,14 @@
                                             <div
                                                 key={`${month}-${day}`}
                                                 style={dayStyle}
-                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(34, 197, 94, 0.25)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = hasApprovedData ? 'rgba(34, 197, 94, 0.15)' : ''}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                    e.currentTarget.style.zIndex = '10';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                    e.currentTarget.style.zIndex = '1';
+                                                }}
                                                 onClick={() => {
                                                     setSelectedYear(yearView);
                                                     setSelectedMonth(month);
@@ -1591,7 +1705,7 @@
                                                 {hasApprovedData && (
                                                     <div style={{
                                                         fontSize: '8px',
-                                                        color: '#16a34a',
+                                                        color: textColor,
                                                         fontWeight: 'bold',
                                                         marginTop: '1px'
                                                     }}>
@@ -1630,7 +1744,7 @@
                 return (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowCalendarModal(false)}>
                         <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '100%', maxWidth: '1400px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'rgba(17, 24, 39, 0.95)' }} onClick={(e) => e.stopPropagation()}>
-                            {false ? (
+                            {isLoading ? (
                                 <div className="flex items-center justify-center py-20">
                                     <div className="text-green-400 text-xl">데이터 로딩 중...</div>
                                 </div>
@@ -1657,31 +1771,6 @@
                                 </div>
                                 
                                 <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-6">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                                            <span className="text-sm text-gray-400">승인 매출</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
-                                            <span className="text-sm text-gray-400">미승인 매출</span>
-                                        </div>
-                                    </div>
-                                    <div className="h-8 w-px bg-gray-700"></div>
-                                    <input
-                                        type="date"
-                                        value={searchDate}
-                                        onChange={(e) => setSearchDate(e.target.value)}
-                                        className="glass-effect rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-400"
-                                        style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
-                                    />
-                                    <button
-                                        onClick={handleDateSearch}
-                                        className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all hover:scale-105"
-                                        style={{ backgroundColor: '#00FF88', color: '#111827' }}
-                                    >
-                                        이동
-                                    </button>
                                     <button
                                         onClick={() => setShowCalendarModal(false)}
                                         className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-all"
@@ -1694,6 +1783,33 @@
                             {/* 12개월 4x3 그리드 배열 */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
                                 {Array.from({ length: 12 }, (_, i) => renderMonthCalendar(i))}
+                            </div>
+                            
+                            {/* 색상 범례 */}
+                            <div style={{ marginTop: '20px', padding: '10px', backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px' }}>매출 금액별 색상 범례</div>
+                                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <div style={{ width: '20px', height: '20px', backgroundColor: 'rgba(147, 197, 253, 0.3)', borderRadius: '3px' }}></div>
+                                        <span style={{ fontSize: '11px', color: '#93c5fd' }}>~50만</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <div style={{ width: '20px', height: '20px', backgroundColor: 'rgba(110, 231, 183, 0.3)', borderRadius: '3px' }}></div>
+                                        <span style={{ fontSize: '11px', color: '#6ee7b7' }}>50~100만</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <div style={{ width: '20px', height: '20px', backgroundColor: 'rgba(252, 211, 77, 0.3)', borderRadius: '3px' }}></div>
+                                        <span style={{ fontSize: '11px', color: '#fcd34d' }}>100~200만</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <div style={{ width: '20px', height: '20px', backgroundColor: 'rgba(251, 146, 60, 0.3)', borderRadius: '3px', border: '1px solid rgba(251, 146, 60, 0.5)' }}></div>
+                                        <span style={{ fontSize: '11px', color: '#fb923c' }}>200~300만</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <div style={{ width: '20px', height: '20px', backgroundColor: 'rgba(248, 113, 113, 0.3)', borderRadius: '3px', border: '1px solid rgba(248, 113, 113, 0.5)' }}></div>
+                                        <span style={{ fontSize: '11px', color: '#f87171' }}>300만~</span>
+                                    </div>
+                                </div>
                             </div>
                             </>
                             )}
@@ -2195,8 +2311,21 @@
                                                 <button
                                                     onClick={() => {
                                                         const today = new Date();
-                                                        const day = today.getMonth() === selectedMonth && today.getFullYear() === selectedYear ? today.getDate() : 1;
-                                                        openAddSaleModal(day);
+                                                        const todayDate = today.getDate();
+                                                        const isCurrentMonth = today.getMonth() === selectedMonth && today.getFullYear() === selectedYear;
+                                                        
+                                                        if (isCurrentMonth) {
+                                                            // 현재 달이면 오늘 날짜로 스크롤
+                                                            const todayElement = document.getElementById(`day-${todayDate}`);
+                                                            if (todayElement) {
+                                                                todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                            }
+                                                            // 오늘 날짜의 매출 입력 모달 열기
+                                                            openAddSaleModal(todayDate);
+                                                        } else {
+                                                            // 다른 달이면 1일로 이동
+                                                            openAddSaleModal(1);
+                                                        }
                                                     }}
                                                     className="glass-effect rounded-full p-3 border-blue-500 hover:border-blue-400 transition-all hover:shadow-lg"
                                                 >
@@ -2337,9 +2466,15 @@
                                                 {!dayData.approved && (
                                                     <button
                                                         onClick={() => openAddSaleModal(day)}
-                                                        className="w-full glass-effect border-blue-500 hover:border-blue-400 rounded-xl py-3 text-sm font-semibold transition-all flex items-center justify-center gap-2 hover:shadow-lg mb-4 text-white"
+                                                        className="w-full glass-effect border-blue-500 hover:border-blue-400 rounded-xl py-3 text-sm font-semibold transition-all flex items-center justify-center gap-2 mb-4"
+                                                        style={{
+                                                            color: '#00C6FF',
+                                                            textShadow: '0 0 10px #00C6FF, 0 0 20px #00C6FF, 0 0 30px #00C6FF, 0 0 40px #00C6FF',
+                                                            boxShadow: '0 0 20px rgba(0, 198, 255, 0.5), inset 0 0 20px rgba(0, 198, 255, 0.1)',
+                                                            animation: 'neonBluePulse 2s ease-in-out infinite'
+                                                        }}
                                                     >
-                                                        <Icon icon={Plus} size={18} />
+                                                        <Icon icon={Plus} size={18} style={{ filter: 'drop-shadow(0 0 8px #00C6FF)' }} />
                                                         빠른 매출 입력
                                                     </button>
                                                 )}
@@ -2450,10 +2585,16 @@
                                                 ) : (
                                                     <div className="space-y-3">
                                                         <button
-                                                            className="glass-effect border-green-500 rounded-xl px-4 py-3 text-base font-semibold cursor-default flex items-center gap-2 w-full justify-center shadow-lg text-white opacity-70"
+                                                            className="glass-effect border-green-500 rounded-xl px-4 py-3 text-base font-semibold cursor-default flex items-center gap-2 w-full justify-center"
+                                                            style={{
+                                                                color: '#00FF88',
+                                                                textShadow: '0 0 10px #00FF88, 0 0 20px #00FF88, 0 0 30px #00FF88, 0 0 40px #00FF88',
+                                                                boxShadow: '0 0 20px rgba(0, 255, 136, 0.5), inset 0 0 20px rgba(0, 255, 136, 0.1)',
+                                                                animation: 'neonGreenPulse 2s ease-in-out infinite'
+                                                            }}
                                                             disabled
                                                         >
-                                                            <Icon icon={Check} size={18} />
+                                                            <Icon icon={Check} size={18} style={{ filter: 'drop-shadow(0 0 8px #00FF88)' }} />
                                                             정산완료
                                                         </button>
                                                         <div className="flex gap-1 sm:gap-2 items-center w-full">
