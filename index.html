@@ -343,6 +343,7 @@
         const User = "user";
         const Package = "package";
         const CreditCard = "credit-card";
+        const X = "x";
 
         // Firebase 초기화
         const firebaseConfig = {
@@ -474,6 +475,7 @@
             const [searchQuery, setSearchQuery] = useState('');
             const [showSearchResultModal, setShowSearchResultModal] = useState(false);
             const [searchResults, setSearchResults] = useState([]);
+            const [showCalendarModal, setShowCalendarModal] = useState(false);
             
             // Firebase 인증 상태
             const [user, setUser] = useState(null);
@@ -913,6 +915,12 @@
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
                         </svg>
+                    ),
+                    "x": (
+                        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} style={style}>
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
                     )
                 };
                 
@@ -1305,6 +1313,319 @@
                 );
             };
 
+            // 달력 모달 컴포넌트
+            const CalendarModal = () => {
+                if (!showCalendarModal) return null;
+                
+                const [yearView, setYearView] = useState(selectedYear);
+                const [searchDate, setSearchDate] = useState('');
+                const [yearSalesData, setYearSalesData] = useState({});
+                const [isLoading, setIsLoading] = useState(true);
+                
+                // 연간 데이터 로드
+                React.useEffect(() => {
+                    const loadYearData = async () => {
+                        setIsLoading(true);
+                        const yearData = {};
+                        
+                        // 현재 연도와 전년도의 모든 월 데이터를 간단하게 로드
+                        const startYear = yearView - 1;
+                        const endYear = yearView;
+                        
+                        for (let year = startYear; year <= endYear; year++) {
+                            for (let month = 0; month < 12; month++) {
+                                const monthStr = String(month + 1).padStart(2, '0');
+                                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                                
+                                // 각 날짜별로 데이터 로드
+                                for (let day = 1; day <= daysInMonth; day++) {
+                                    const dayStr = String(day).padStart(2, '0');
+                                    const dateKey = `${year}-${monthStr}-${dayStr}`;
+                                    
+                                    try {
+                                        const data = await salesService.loadSalesData(dateKey);
+                                        if (data && data.amount > 0) {
+                                            yearData[dateKey] = data;
+                                        }
+                                    } catch (error) {
+                                        // 데이터가 없는 경우 무시
+                                    }
+                                }
+                            }
+                        }
+                        
+                        setYearSalesData(yearData);
+                        setIsLoading(false);
+                    };
+                    
+                    loadYearData();
+                }, [yearView]);
+                
+                // 1년치 월별 캘린더 생성
+                const renderMonthCalendar = (month) => {
+                    const firstDay = new Date(yearView, month, 1).getDay();
+                    const daysInMonth = new Date(yearView, month + 1, 0).getDate();
+                    const weeks = [];
+                    let currentWeek = [];
+                    let monthTotal = 0;
+                    let prevMonthTotal = 0;
+                    
+                    // 데이터 소스 결정 (로딩 완료 후 yearSalesData 사용, 아니면 salesData)
+                    const dataSource = (!isLoading && Object.keys(yearSalesData).length > 0) ? yearSalesData : salesData;
+                    
+                    // 월 총 매출 계산 (승인된 것만)
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const dateKey = `${yearView}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const dayData = dataSource[dateKey] || { amount: 0, approved: false };
+                        if (dayData.amount > 0 && dayData.approved) {
+                            monthTotal += dayData.amount;
+                        }
+                    }
+                    
+                    // 전월 총 매출 계산 (승인된 것만)
+                    const prevMonth = month === 0 ? 11 : month - 1;
+                    const prevYear = month === 0 ? yearView - 1 : yearView;
+                    const prevDaysInMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+                    for (let day = 1; day <= prevDaysInMonth; day++) {
+                        const dateKey = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const dayData = dataSource[dateKey] || { amount: 0, approved: false };
+                        if (dayData.amount > 0 && dayData.approved) {
+                            prevMonthTotal += dayData.amount;
+                        }
+                    }
+                    
+                    // 전월 대비 증감률 계산
+                    let changePercent = 0;
+                    if (prevMonthTotal > 0) {
+                        changePercent = ((monthTotal - prevMonthTotal) / prevMonthTotal * 100).toFixed(1);
+                    }
+                    
+                    // 첫 주의 빈 칸 추가
+                    for (let i = 0; i < firstDay; i++) {
+                        currentWeek.push(null);
+                    }
+                    
+                    // 날짜를 주 단위로 그룹화
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        currentWeek.push(day);
+                        if (currentWeek.length === 7) {
+                            weeks.push(currentWeek);
+                            currentWeek = [];
+                        }
+                    }
+                    
+                    // 마지막 주 처리
+                    if (currentWeek.length > 0) {
+                        while (currentWeek.length < 7) {
+                            currentWeek.push(null);
+                        }
+                        weeks.push(currentWeek);
+                    }
+                    
+                    return (
+                        <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', backdropFilter: 'blur(10px)', borderRadius: '8px', padding: '10px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                            <h4 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '4px', textAlign: 'center', color: '#00FF88' }}>
+                                {String(month + 1).padStart(2, '0')}월
+                            </h4>
+                            <div style={{ fontSize: '11px', color: '#fbbf24', textAlign: 'center', marginBottom: '2px', fontWeight: 'bold' }}>
+                                {monthTotal > 0 ? `${monthTotal.toLocaleString()}원` : '-'}
+                            </div>
+                            {prevMonthTotal > 0 && monthTotal > 0 && (
+                                <div style={{ 
+                                    fontSize: '9px', 
+                                    color: changePercent >= 0 ? '#10b981' : '#ef4444', 
+                                    textAlign: 'center', 
+                                    marginBottom: '6px' 
+                                }}>
+                                    {changePercent >= 0 ? '▲' : '▼'} {Math.abs(changePercent)}%
+                                </div>
+                            )}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', fontSize: '10px', marginBottom: '4px' }}>
+                                {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
+                                    <div key={d} style={{ 
+                                        textAlign: 'center', 
+                                        fontWeight: '500',
+                                        color: i === 0 ? '#f87171' : i === 6 ? '#60a5fa' : '#9ca3af'
+                                    }}>{d}</div>
+                                ))}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+                                {weeks.map((week, weekIndex) => (
+                                    week.map((day, dayIndex) => {
+                                        if (day === null) {
+                                            return <div key={`empty-${month}-${weekIndex}-${dayIndex}`} style={{ height: '35px' }} />;
+                                        }
+                                        
+                                        const dateKey = `${yearView}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                        const currentDataSource = (!isLoading && Object.keys(yearSalesData).length > 0) ? yearSalesData : salesData;
+                                        const dayData = currentDataSource[dateKey] || { amount: 0, approved: false };
+                                        const date = new Date(yearView, month, day);
+                                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                                        const isToday = new Date().toDateString() === date.toDateString();
+                                        const hasApprovedData = dayData.amount > 0 && dayData.approved;
+                                        
+                                        // 매출액 포맷팅 (일반 숫자 형식)
+                                        const formatAmount = (amount) => {
+                                            if (amount >= 100000) {
+                                                // 10만원 이상은 만원 단위로 표시
+                                                return Math.floor(amount / 10000) + '만';
+                                            }
+                                            return amount.toLocaleString();
+                                        };
+                                        
+                                        const dayStyle = {
+                                            height: '35px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            borderRadius: '3px',
+                                            transition: 'all 0.2s',
+                                            padding: '2px',
+                                            backgroundColor: hasApprovedData ? 'rgba(34, 197, 94, 0.15)' : '',
+                                            outline: isToday ? '1px solid #10b981' : 'none'
+                                        };
+                                        
+                                        return (
+                                            <div
+                                                key={`${month}-${day}`}
+                                                style={dayStyle}
+                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(34, 197, 94, 0.25)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = hasApprovedData ? 'rgba(34, 197, 94, 0.15)' : ''}
+                                                onClick={() => {
+                                                    setSelectedYear(yearView);
+                                                    setSelectedMonth(month);
+                                                    setShowCalendarModal(false);
+                                                    setViewMode('daily');
+                                                    setTimeout(() => {
+                                                        const element = document.getElementById(`day-${day}`);
+                                                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                    }, 100);
+                                                }}
+                                                title={hasApprovedData ? `${dayData.amount.toLocaleString()}원` : ''}
+                                            >
+                                                <div style={{
+                                                    fontSize: '11px',
+                                                    fontWeight: hasApprovedData ? 'bold' : 'normal',
+                                                    color: hasApprovedData ? '#22c55e' : (isWeekend ? (date.getDay() === 0 ? '#f87171' : '#60a5fa') : '#9ca3af')
+                                                }}>
+                                                    {day}
+                                                </div>
+                                                {hasApprovedData && (
+                                                    <div style={{
+                                                        fontSize: '8px',
+                                                        color: '#16a34a',
+                                                        fontWeight: 'bold',
+                                                        marginTop: '1px'
+                                                    }}>
+                                                        {formatAmount(dayData.amount)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                ))}
+                            </div>
+                        </div>
+                    );
+                };
+                
+                // 날짜 검색 처리
+                const handleDateSearch = () => {
+                    if (!searchDate) return;
+                    
+                    const parts = searchDate.split('-');
+                    if (parts.length === 3) {
+                        const [year, month, day] = parts.map(p => parseInt(p));
+                        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                            setSelectedYear(year);
+                            setSelectedMonth(month - 1);
+                            setShowCalendarModal(false);
+                            setViewMode('daily');
+                            setTimeout(() => {
+                                const element = document.getElementById(`day-${day}`);
+                                element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
+                        }
+                    }
+                };
+                
+                return (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowCalendarModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '100%', maxWidth: '1400px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'rgba(17, 24, 39, 0.95)' }} onClick={(e) => e.stopPropagation()}>
+                            {isLoading ? (
+                                <div className="flex items-center justify-center py-20">
+                                    <div className="text-green-400 text-xl">데이터 로딩 중...</div>
+                                </div>
+                            ) : (
+                            <>
+                            {/* 헤더 */}
+                            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-700">
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={() => setYearView(yearView - 1)}
+                                        className="w-10 h-10 flex items-center justify-center glass-effect rounded-lg hover:border-green-400 transition-all text-gray-300"
+                                    >
+                                        ◀
+                                    </button>
+                                    <h3 className="text-3xl font-bold min-w-[100px] text-center" style={{ color: '#00FF88' }}>
+                                        {yearView}
+                                    </h3>
+                                    <button
+                                        onClick={() => setYearView(yearView + 1)}
+                                        className="w-10 h-10 flex items-center justify-center glass-effect rounded-lg hover:border-green-400 transition-all text-gray-300"
+                                    >
+                                        ▶
+                                    </button>
+                                </div>
+                                
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-6">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                                            <span className="text-sm text-gray-400">승인 매출</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
+                                            <span className="text-sm text-gray-400">미승인 매출</span>
+                                        </div>
+                                    </div>
+                                    <div className="h-8 w-px bg-gray-700"></div>
+                                    <input
+                                        type="date"
+                                        value={searchDate}
+                                        onChange={(e) => setSearchDate(e.target.value)}
+                                        className="glass-effect rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-400"
+                                        style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+                                    />
+                                    <button
+                                        onClick={handleDateSearch}
+                                        className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all hover:scale-105"
+                                        style={{ backgroundColor: '#00FF88', color: '#111827' }}
+                                    >
+                                        이동
+                                    </button>
+                                    <button
+                                        onClick={() => setShowCalendarModal(false)}
+                                        className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-all"
+                                    >
+                                        <Icon icon={X} size={24} style={{ color: '#999' }} />
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* 12개월 4x3 그리드 배열 */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                                {Array.from({ length: 12 }, (_, i) => renderMonthCalendar(i))}
+                            </div>
+                            </>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
             // 로그인 화면
             if (isLoading) {
                 return (
@@ -1556,6 +1877,8 @@
                         {showAddSaleModal && <AddSaleModal />}
                         {/* 검색 결과 모달 */}
                         {showSearchResultModal && <SearchResultModal />}
+                        {/* 달력 모달 */}
+                        <CalendarModal />
                         {/* 헤더 */}
                         <div className="text-center mb-8 sm:mb-10 relative">
                             <h1 className="text-3xl sm:text-5xl font-black mb-2 sm:mb-3" style={{ color: '#00FF88' }}>
@@ -1694,7 +2017,7 @@
                                 </button>
                             </div>
                             
-                            <div className="flex gap-3 w-full sm:w-auto">
+                            <div className="flex gap-3 w-full sm:w-auto items-center">
                                 <select
                                     value={selectedMonth}
                                     onChange={(e) => {
@@ -1739,6 +2062,13 @@
                                         <option key={year} value={year}>{year}년</option>
                                     ))}
                                 </select>
+                                <button
+                                    onClick={() => setShowCalendarModal(true)}
+                                    className="glass-effect rounded-xl p-3 border-green-500 hover:border-green-400 transition-all hover:shadow-lg"
+                                    title="연간 달력 보기"
+                                >
+                                    <Icon icon={Calendar} size={20} style={{ color: '#00FF88' }} />
+                                </button>
                             </div>
                         </div>
 
@@ -1785,13 +2115,6 @@
                                     </h2>
                                     {viewMode === 'daily' && (
                                         <div className="flex gap-2">
-                                            <button
-                                                onClick={scrollToToday}
-                                                className="glass-effect rounded-full p-3 border-green-500 hover:border-green-400 transition-all hover:shadow-lg"
-                                                title="오늘로 이동"
-                                            >
-                                                <Icon icon={Calendar} size={20} style={{ color: '#00FF88' }} />
-                                            </button>
                                             <div className="relative group">
                                                 <button
                                                     onClick={() => {
