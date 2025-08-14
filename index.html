@@ -1339,6 +1339,68 @@
                                     </div>
                                 )}
                                 
+                                {/* 기타 매출 입력 섹션 */}
+                                <div style={{borderTop: '1px solid rgba(139, 92, 246, 0.3)', paddingTop: '1rem', marginTop: '1rem'}}>
+                                    <label className="block text-sm font-semibold mb-2" style={{color: '#c084fc'}}>기타 매출</label>
+                                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+                                        <input
+                                            type="text"
+                                            value={modalData.otherItemName || ''}
+                                            onChange={(e) => setModalData({...modalData, otherItemName: e.target.value})}
+                                            className="glass-effect rounded-lg px-4 py-3 w-full focus:border-purple-400 focus:outline-none"
+                                            placeholder="항목명을 입력하세요 (예: PT수업, 개인레슨)"
+                                            style={{ fontSize: '16px' }}
+                                        />
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={modalData.otherItemPrice || ''}
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/[^0-9]/g, '');
+                                                if (value === '') {
+                                                    setModalData({...modalData, otherItemPrice: ''});
+                                                } else {
+                                                    setModalData({...modalData, otherItemPrice: formatNumberWithCommas(value)});
+                                                }
+                                            }}
+                                            className="glass-effect rounded-lg px-4 py-3 w-full focus:border-purple-400 focus:outline-none"
+                                            placeholder="금액을 입력하세요"
+                                            style={{ fontSize: '16px' }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (modalData.otherItemName && modalData.otherItemPrice) {
+                                                    const otherPrice = parseInt(modalData.otherItemPrice.replace(/,/g, ''));
+                                                    const currentPrice = parseInt(modalData.price.replace(/,/g, '') || 0);
+                                                    const newPrice = currentPrice + otherPrice;
+                                                    
+                                                    // 기타 매출을 products에 추가
+                                                    const otherProduct = modalData.otherItemName + ' - ' + formatNumberWithCommas(otherPrice) + '원';
+                                                    const currentProducts = modalData.products || '';
+                                                    const newProducts = currentProducts ? currentProducts + ', ' + otherProduct : otherProduct;
+                                                    
+                                                    setModalData({
+                                                        ...modalData,
+                                                        price: formatNumberWithCommas(newPrice),
+                                                        products: newProducts,
+                                                        otherItemName: '',
+                                                        otherItemPrice: ''
+                                                    });
+                                                    
+                                                    alert('기타 매출이 추가되었습니다!');
+                                                } else {
+                                                    alert('항목명과 금액을 모두 입력해주세요.');
+                                                }
+                                            }}
+                                            className="glass-effect border-purple-500 hover:border-purple-400 rounded-lg py-3 font-semibold transition-all hover:shadow-lg text-white"
+                                            style={{background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.3))'}}
+                                        >
+                                            기타 매출 추가
+                                        </button>
+                                    </div>
+                                </div>
+                                
                                 <div>
                                     <label className="block text-sm font-semibold mb-2 text-gray-300">할인 금액</label>
                                     <input
