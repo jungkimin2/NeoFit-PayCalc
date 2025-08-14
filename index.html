@@ -1128,22 +1128,27 @@
                     discount: ''
                 });
                 
-                // 상품 선택 시 가격 자동 계산
+                // 상품 선택 시 가격 자동 계산 (사용자가 직접 입력한 가격이 없을 때만)
                 React.useEffect(() => {
-                    let totalPrice = 0;
-                    if (modalData.healthProduct) totalPrice += productPrices[modalData.healthProduct] || 0;
-                    if (modalData.pilatesProduct) totalPrice += productPrices[modalData.pilatesProduct] || 0;
-                    if (modalData.neofitProduct) totalPrice += productPrices[modalData.neofitProduct] || 0;
-                    if (modalData.lockerType && modalData.lockerPeriod) {
-                        const lockerKey = `${modalData.lockerType} ${modalData.lockerPeriod}`;
-                        totalPrice += productPrices[lockerKey] || 0;
+                    // 사용자가 직접 가격을 수정했는지 확인
+                    if (!modalData.manualPriceEdit) {
+                        let totalPrice = 0;
+                        if (modalData.healthProduct) totalPrice += productPrices[modalData.healthProduct] || 0;
+                        if (modalData.pilatesProduct) totalPrice += productPrices[modalData.pilatesProduct] || 0;
+                        if (modalData.neofitProduct) totalPrice += productPrices[modalData.neofitProduct] || 0;
+                        if (modalData.lockerType && modalData.lockerPeriod) {
+                            const lockerKey = `${modalData.lockerType} ${modalData.lockerPeriod}`;
+                            totalPrice += productPrices[lockerKey] || 0;
+                        }
+                        
+                        // 할인 금액 차감
+                        const discount = parseInt(removeCommas(modalData.discount)) || 0;
+                        const finalPrice = Math.max(0, totalPrice - discount);
+                        
+                        if (totalPrice > 0) {
+                            setModalData(prev => ({ ...prev, price: formatNumberWithCommas(finalPrice) }));
+                        }
                     }
-                    
-                    // 할인 금액 차감
-                    const discount = parseInt(removeCommas(modalData.discount)) || 0;
-                    const finalPrice = Math.max(0, totalPrice - discount);
-                    
-                    setModalData(prev => ({ ...prev, price: formatNumberWithCommas(finalPrice) }));
                 }, [modalData.healthProduct, modalData.pilatesProduct, modalData.neofitProduct, modalData.lockerType, modalData.lockerPeriod, modalData.discount]);
                 
                 const handleSubmit = async (e) => {
@@ -1156,8 +1161,18 @@
                         selectedProducts.push(`${modalData.lockerType}: ${modalData.lockerPeriod}`);
                     }
                     
-                    if (!modalData.customerName || selectedProducts.length === 0 || !modalData.price) {
-                        alert('회원명, 상품(최소 1개), 가격을 모두 입력해주세요.');
+                    // 일반 매출은 회원명과 상품이 필요하지만, 가격만 있어도 등록 가능
+                    if (!modalData.customerName && selectedProducts.length === 0 && !modalData.price) {
+                        alert('매출 정보를 입력해주세요.');
+                        return;
+                    }
+                    
+                    // 가격만 입력된 경우 직접 입력으로 처리
+                    if (!modalData.customerName && selectedProducts.length === 0 && modalData.price) {
+                        modalData.customerName = '직접입력';
+                        selectedProducts.push('직접입력');
+                    } else if (!modalData.customerName || (selectedProducts.length === 0 && !modalData.price)) {
+                        alert('회원명과 상품 또는 가격을 입력해주세요.');
                         return;
                     }
                     
@@ -1372,22 +1387,44 @@
                                             onClick={() => {
                                                 if (modalData.otherItemName && modalData.otherItemPrice) {
                                                     const otherPrice = parseInt(modalData.otherItemPrice.replace(/,/g, ''));
-                                                    const currentPrice = parseInt(modalData.price.replace(/,/g, '') || 0);
-                                                    const newPrice = currentPrice + otherPrice;
+                                                    const dateKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(selectedModalDay).padStart(2, '0')}`;
                                                     
-                                                    // 기타 매출을 products에 추가
-                                                    const otherProduct = modalData.otherItemName + ' - ' + formatNumberWithCommas(otherPrice) + '원';
-                                                    const currentProducts = modalData.products || '';
-                                                    const newProducts = currentProducts ? currentProducts + ', ' + otherProduct : otherProduct;
+                                                    const newSale = {
+                                                        id: Date.now(),
+                                                        date: dateKey,
+                                                        customerName: '기타',
+                                                        products: modalData.otherItemName,
+                                                        price: otherPrice,
+                                                        discount: 0,
+                                                        paymentMethod: '현금',
+                                                        timestamp: new Date().toISOString()
+                                                    };
                                                     
+                                                    // 데이터베이스에 바로 저장
+                                                    const currentData = salesData[dateKey] || { amount: 0, details: [] };
+                                                    const newDetails = [...currentData.details, newSale];
+                                                    const newTotalAmount = newDetails.reduce((sum, detail) => sum + detail.price, 0);
+                                                    
+                                                    const updatedData = {
+                                                        ...currentData,
+                                                        amount: newTotalAmount,
+                                                        details: newDetails
+                                                    };
+                                                    
+                                                    setSalesData(prev => ({
+                                                        ...prev,
+                                                        [dateKey]: updatedData
+                                                    }));
+                                                    
+                                                    // 입력 필드 초기화
                                                     setModalData({
                                                         ...modalData,
-                                                        price: formatNumberWithCommas(newPrice),
-                                                        products: newProducts,
                                                         otherItemName: '',
                                                         otherItemPrice: ''
                                                     });
                                                     
+                                                    // 모달 닫기
+                                                    setShowAddSaleModal(false);
                                                     alert('기타 매출이 추가되었습니다!');
                                                 } else {
                                                     alert('항목명과 금액을 모두 입력해주세요.');
@@ -1425,10 +1462,19 @@
                                     <label className="block text-sm font-semibold mb-2 text-gray-300">최종 가격</label>
                                     <input
                                         type="text"
+                                        inputMode="numeric"
                                         value={modalData.price}
-                                        readOnly
-                                        className="glass-effect rounded-lg px-4 py-3 w-full bg-gray-800/50 cursor-not-allowed text-green-400 font-bold text-lg"
-                                        placeholder="상품을 선택하면 가격이 자동 계산됩니다"
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/[^0-9]/g, '');
+                                            if (value === '') {
+                                                setModalData({...modalData, price: '', manualPriceEdit: true});
+                                            } else {
+                                                setModalData({...modalData, price: formatNumberWithCommas(value), manualPriceEdit: true});
+                                            }
+                                        }}
+                                        className="glass-effect rounded-lg px-4 py-3 w-full text-green-400 font-bold text-lg focus:border-green-400 focus:outline-none"
+                                        placeholder="상품을 선택하거나 직접 입력하세요"
+                                        style={{ fontSize: '16px' }}
                                     />
                                 </div>
                                 
