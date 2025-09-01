@@ -36,6 +36,7 @@
 
         input[type=number] {
             -moz-appearance: textfield;
+            appearance: textfield;
         }
 
         .glow-green {
@@ -142,6 +143,84 @@
                 text-shadow: 0 0 15px #00C6FF, 0 0 25px #00C6FF, 0 0 35px #00C6FF, 0 0 50px #00C6FF;
                 box-shadow: 0 0 30px rgba(0, 198, 255, 0.7), inset 0 0 30px rgba(0, 198, 255, 0.2);
             }
+        }
+        
+        /* 드롭다운 optgroup 그린 네온 효과 스타일 - 모든 카테고리 라벨에 적용 */
+        select optgroup {
+            color: #00FF88 !important;
+            font-weight: 700 !important;
+            text-shadow: 0 0 5px #00FF88, 
+                         0 0 10px #00FF88, 
+                         0 0 15px #00FF88, 
+                         0 0 20px #00FF88,
+                         0 0 30px #00FF88 !important;
+            background: rgba(0, 255, 136, 0.1) !important;
+        }
+        
+        /* 모든 optgroup 라벨에 네온 효과 강제 적용 */
+        optgroup[label] {
+            color: #00FF88 !important;
+            text-shadow: 0 0 8px #00FF88, 
+                         0 0 16px #00FF88, 
+                         0 0 24px #00FF88 !important;
+            font-weight: bold !important;
+        }
+        
+        /* Webkit 브라우저용 특별 스타일 */
+        @media screen and (-webkit-min-device-pixel-ratio:0) {
+            select optgroup {
+                color: #00FF88 !important;
+                -webkit-text-fill-color: #00FF88 !important;
+                font-weight: bold !important;
+                text-shadow: 0 0 10px #00FF88 !important;
+            }
+        }
+        
+        /* Firefox용 스타일 */
+        @-moz-document url-prefix() {
+            select optgroup {
+                color: #00FF88 !important;
+                font-weight: bold !important;
+                text-shadow: 0 0 10px #00FF88 !important;
+            }
+        }
+        
+        /* 첫번째 optgroup은 상단 border 제거 */
+        select optgroup:first-of-type {
+            border-top: none !important;
+        }
+        
+        /* 드롭다운 전체 스타일 개선 */
+        select.glass-effect {
+            background: rgba(10, 14, 26, 0.95) !important;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #fff;
+        }
+        
+        /* disabled option을 카테고리 라벨로 스타일링 */
+        select option:disabled {
+            color: #00FF88 !important;
+            font-weight: bold !important;
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.05)) !important;
+            text-align: center !important;
+            padding: 10px !important;
+            font-size: 0.95em !important;
+        }
+        
+        select.glass-effect:focus {
+            border-color: #00FF88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+            outline: none;
+        }
+        
+        select option {
+            background: rgba(10, 14, 26, 0.98);
+            color: #fff;
+            padding: 8px;
+        }
+        
+        select option:hover {
+            background: rgba(0, 255, 136, 0.2);
         }
         
         .fixed {
@@ -1266,20 +1345,22 @@
                                         className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
                                     >
                                         <option value="">필라테스 이용권 선택</option>
-                                        <optgroup label="주 2회 상품">
-                                            {pilatesProducts.slice(0, 3).map(product => (
-                                                <option key={product} value={product}>
-                                                    {product} - {productPrices[product].toLocaleString()}원
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="주 3회 상품">
-                                            {pilatesProducts.slice(3, 6).map(product => (
-                                                <option key={product} value={product}>
-                                                    {product} - {productPrices[product].toLocaleString()}원
-                                                </option>
-                                            ))}
-                                        </optgroup>
+                                        <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
+                                            ─────── 주 2회 상품 ───────
+                                        </option>
+                                        {pilatesProducts.slice(0, 3).map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
+                                        ))}
+                                        <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
+                                            ─────── 주 3회 상품 ───────
+                                        </option>
+                                        {pilatesProducts.slice(3, 6).map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 
@@ -1294,27 +1375,30 @@
                                         <option value={neofitProducts[0]}>
                                             {neofitProducts[0]} - {productPrices[neofitProducts[0]].toLocaleString()}원
                                         </option>
-                                        <optgroup label="네오핏 무제한권">
-                                            {neofitProducts.slice(1, 4).map(product => (
-                                                <option key={product} value={product}>
-                                                    {product} - {productPrices[product].toLocaleString()}원
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="네오핏 주 2회">
-                                            {neofitProducts.slice(4, 7).map(product => (
-                                                <option key={product} value={product}>
-                                                    {product} - {productPrices[product].toLocaleString()}원
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="네오핏 주 3회">
-                                            {neofitProducts.slice(7, 10).map(product => (
-                                                <option key={product} value={product}>
-                                                    {product} - {productPrices[product].toLocaleString()}원
-                                                </option>
-                                            ))}
-                                        </optgroup>
+                                        <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
+                                            ─────── 네오핏 무제한권 ───────
+                                        </option>
+                                        {neofitProducts.slice(1, 4).map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
+                                        ))}
+                                        <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
+                                            ─────── 네오핏 주 2회 ───────
+                                        </option>
+                                        {neofitProducts.slice(4, 7).map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
+                                        ))}
+                                        <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
+                                            ─────── 네오핏 주 3회 ───────
+                                        </option>
+                                        {neofitProducts.slice(7, 10).map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 
@@ -2992,6 +3076,43 @@
         };
 
         ReactDOM.createRoot(document.getElementById('root')).render(<NeoFitPayCalc />);
+    </script>
+    
+    <script>
+        // optgroup 네온 효과 적용을 위한 스크립트
+        function applyNeonEffectToOptgroups() {
+            const optgroups = document.querySelectorAll('select optgroup');
+            optgroups.forEach(optgroup => {
+                // 인라인 스타일로 직접 적용
+                optgroup.style.color = '#00FF88';
+                optgroup.style.fontWeight = 'bold';
+                optgroup.style.textShadow = '0 0 10px #00FF88, 0 0 20px #00FF88, 0 0 30px #00FF88';
+                optgroup.style.backgroundColor = 'rgba(0, 255, 136, 0.1)';
+                optgroup.style.display = 'block';
+                optgroup.style.padding = '8px';
+                optgroup.style.margin = '4px 0';
+            });
+        }
+        
+        // DOM이 로드된 후 실행
+        document.addEventListener('DOMContentLoaded', applyNeonEffectToOptgroups);
+        
+        // React 렌더링 후에도 실행 (동적으로 생성되는 요소를 위해)
+        setTimeout(applyNeonEffectToOptgroups, 1000);
+        
+        // 모달이 열릴 때마다 적용
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    applyNeonEffectToOptgroups();
+                }
+            });
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
     </script>
 </body>
 </html>
