@@ -670,6 +670,7 @@
 
             // 상품 목록
             const healthProducts = ['1개월', '3개월', '6개월', '12개월'];
+            const ptProducts = ['1회 체험', '5회 체험'];
             const pilatesProducts = [
                 '3개월 (24회 주 2회)', 
                 '6개월 (48회 주 2회)', 
@@ -680,6 +681,7 @@
             ];
             const neofitProducts = [
                 '네오핏 3회 체험권',
+                '네오핏 12회 단독 상품',
                 '30일 기간권',
                 '180일 기간권',
                 '90일 기간권',
@@ -700,8 +702,12 @@
                 '3개월': 270000,
                 '6개월': 420000,
                 '12개월': 600000,
+                // 1:1 PT 이용권
+                '1회 체험': 45000,
+                '5회 체험': 225000,
                 // 네오핏 이용권
                 '네오핏 3회 체험권': 60000,
+                '네오핏 12회 단독 상품': 264000,
                 '30일 기간권': 390000,
                 '180일 기간권': 1980000,
                 '90일 기간권': 1080000,
@@ -1214,6 +1220,7 @@
                     if (!modalData.manualPriceEdit) {
                         let totalPrice = 0;
                         if (modalData.healthProduct) totalPrice += productPrices[modalData.healthProduct] || 0;
+                        if (modalData.ptProduct) totalPrice += productPrices[modalData.ptProduct] || 0;
                         if (modalData.pilatesProduct) totalPrice += productPrices[modalData.pilatesProduct] || 0;
                         if (modalData.neofitProduct) totalPrice += productPrices[modalData.neofitProduct] || 0;
                         if (modalData.lockerType && modalData.lockerPeriod) {
@@ -1229,12 +1236,13 @@
                             setModalData(prev => ({ ...prev, price: formatNumberWithCommas(finalPrice) }));
                         }
                     }
-                }, [modalData.healthProduct, modalData.pilatesProduct, modalData.neofitProduct, modalData.lockerType, modalData.lockerPeriod, modalData.discount]);
+                }, [modalData.healthProduct, modalData.ptProduct, modalData.pilatesProduct, modalData.neofitProduct, modalData.lockerType, modalData.lockerPeriod, modalData.discount]);
                 
                 const handleSubmit = async (e) => {
                     e.preventDefault();
                     const selectedProducts = [];
                     if (modalData.healthProduct) selectedProducts.push('헬스: ' + modalData.healthProduct);
+                    if (modalData.ptProduct) selectedProducts.push('PT: ' + modalData.ptProduct);
                     if (modalData.pilatesProduct) selectedProducts.push('필라테스: ' + modalData.pilatesProduct);
                     if (modalData.neofitProduct) selectedProducts.push('네오핏: ' + modalData.neofitProduct);
                     if (modalData.lockerType && modalData.lockerPeriod) {
@@ -1339,6 +1347,22 @@
                                 </div>
                                 
                                 <div>
+                                    <label className="block text-sm font-semibold mb-2 text-gray-300">1:1 PT 이용권</label>
+                                    <select
+                                        value={modalData.ptProduct}
+                                        onChange={(e) => setModalData({...modalData, ptProduct: e.target.value})}
+                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                    >
+                                        <option value="">1:1 PT 이용권 선택</option>
+                                        {ptProducts.map(product => (
+                                            <option key={product} value={product}>
+                                                {product} - {productPrices[product].toLocaleString()}원
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div>
                                     <label className="block text-sm font-semibold mb-2 text-gray-300">필라테스 이용권</label>
                                     <select
                                         value={modalData.pilatesProduct}
@@ -1376,10 +1400,13 @@
                                         <option value={neofitProducts[0]}>
                                             {neofitProducts[0]} - {productPrices[neofitProducts[0]].toLocaleString()}원
                                         </option>
+                                        <option value={neofitProducts[1]}>
+                                            {neofitProducts[1]} - {productPrices[neofitProducts[1]].toLocaleString()}원
+                                        </option>
                                         <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
                                             ─────── 네오핏 무제한권 ───────
                                         </option>
-                                        {neofitProducts.slice(1, 4).map(product => (
+                                        {neofitProducts.slice(2, 5).map(product => (
                                             <option key={product} value={product}>
                                                 {product} - {productPrices[product].toLocaleString()}원
                                             </option>
@@ -1387,7 +1414,7 @@
                                         <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
                                             ─────── 네오핏 주 2회 ───────
                                         </option>
-                                        {neofitProducts.slice(4, 7).map(product => (
+                                        {neofitProducts.slice(5, 8).map(product => (
                                             <option key={product} value={product}>
                                                 {product} - {productPrices[product].toLocaleString()}원
                                             </option>
@@ -1395,7 +1422,7 @@
                                         <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
                                             ─────── 네오핏 주 3회 ───────
                                         </option>
-                                        {neofitProducts.slice(7, 10).map(product => (
+                                        {neofitProducts.slice(8, 11).map(product => (
                                             <option key={product} value={product}>
                                                 {product} - {productPrices[product].toLocaleString()}원
                                             </option>
@@ -2577,7 +2604,7 @@
                                 
                                 {/* 일별 뷰 */}
                                 {viewMode === 'daily' && (
-                                    <div ref={dailyViewRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-4 max-h-[650px] overflow-y-auto p-2" style={{display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'}}>
+                                    <div ref={dailyViewRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4 max-h-[650px] overflow-y-auto p-2" style={{display: 'grid', gridTemplateColumns: window.innerWidth < 640 ? 'repeat(1, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))'}}>
                                         {Array.from({ length: getDaysInMonth() }, (_, i) => i + 1).map(day => {
                                         const dateKey = getDateKey(day);
                                         const dayData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
