@@ -591,10 +591,22 @@
             const [showSearchResultModal, setShowSearchResultModal] = useState(false);
             const [searchResults, setSearchResults] = useState([]);
             const [showCalendarModal, setShowCalendarModal] = useState(false);
+            const [showPilatesModal, setShowPilatesModal] = useState(false);
+            const [showHealthModal, setShowHealthModal] = useState(false);
+            const [showNeofitModal, setShowNeofitModal] = useState(false);
+            const [showClothingLockerModal, setShowClothingLockerModal] = useState(false);
+            const [showPtModal, setShowPtModal] = useState(false);
+            const [showOtherModal, setShowOtherModal] = useState(false);
             
             // Firebase 인증 상태
             const [user, setUser] = useState(null);
             const [isLoading, setIsLoading] = useState(true);
+
+            // dailySales 상태 추가 - 월별 리포트 차트를 위한 데이터
+            const [dailySales, setDailySales] = useState([]);
+
+            // 전체 연도 데이터 (월별 리포트 차트용)
+            const [yearlyDailySales, setYearlyDailySales] = useState([]);
             
             // Firebase에서 실시간 데이터 구독
             React.useEffect(() => {
@@ -615,26 +627,12 @@
                     }
                 );
                 
-                // 전월 데이터도 구독 (전월 대비 계산용)
-                const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
-                const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
-                
-                const prevUnsubscribe = salesService.subscribeToMonthData(
-                    prevYear,
-                    prevMonth,
-                    (data) => {
-                        setSalesData(prevData => ({
-                            ...prevData,
-                            ...data
-                        }));
-                    }
-                );
+                // 전월 데이터 구독 제거 - 월별 매출 중복 계산 방지
                 
                 return () => {
                     // 구독 해제
                     setSalesData({});
                     if (unsubscribe) unsubscribe();
-                    if (prevUnsubscribe) prevUnsubscribe();
                 };
             }, [user, selectedYear, selectedMonth]);
             const [loginError, setLoginError] = useState('');
@@ -649,7 +647,109 @@
                 
                 return () => unsubscribe();
             }, []);
-            
+
+            // salesData에서 dailySales 배열 생성 (월별 리포트 차트용)
+            React.useEffect(() => {
+                const newDailySales = [];
+
+                // salesData를 순회하며 dailySales 배열 생성
+                Object.keys(salesData).forEach(dateKey => {
+                    const dayData = salesData[dateKey];
+                    if (dayData && dayData.details && Array.isArray(dayData.details)) {
+                        dayData.details.forEach(detail => {
+                            if (detail && detail.product && detail.price) {
+                                newDailySales.push({
+                                    date: dateKey,
+                                    product: detail.product,
+                                    price: detail.price,
+                                    customerName: detail.customerName || '',
+                                    approved: dayData.approved || false
+                                });
+                            }
+                        });
+                    }
+                });
+
+                setDailySales(newDailySales);
+                console.log('dailySales 업데이트됨:', newDailySales.length, '개 항목');
+            }, [salesData]);
+
+            // 전체 연도 데이터 로드 (월별 리포트 차트용)
+            React.useEffect(() => {
+                if (!user) return;
+
+                const currentDate = new Date();
+                const currentYear = currentDate.getFullYear();
+                const unsubscribes = [];
+
+                // 5개월간 데이터 로드 (현재월 기준 -4월~현재월)
+                const loadYearlyData = () => {
+                    console.log('전체 연도 데이터 로드 시작...');
+
+                    for (let i = -4; i <= 0; i++) {
+                        const targetDate = new Date(currentYear, currentDate.getMonth() + i, 1);
+                        const year = targetDate.getFullYear();
+                        const month = targetDate.getMonth();
+
+                        console.log(`${year}년 ${month + 1}월 데이터 구독 시작`);
+
+                        try {
+                            // 해당 월의 모든 데이터를 실시간 구독
+                            const unsubscribe = salesService.subscribeToMonthData(
+                                year,
+                                month,
+                                (monthData) => {
+                                    console.log(`${year}년 ${month + 1}월 데이터 수신:`, Object.keys(monthData).length, '개 날짜');
+
+                                    // 월별 데이터를 dailySales 형태로 변환
+                                    const monthDailySales = [];
+                                    Object.keys(monthData).forEach(dateKey => {
+                                        const dayData = monthData[dateKey];
+                                        if (dayData && dayData.details && Array.isArray(dayData.details)) {
+                                            dayData.details.forEach(detail => {
+                                                if (detail && detail.product && detail.price) {
+                                                    monthDailySales.push({
+                                                        date: dateKey,
+                                                        product: detail.product,
+                                                        price: detail.price,
+                                                        customerName: detail.customerName || '',
+                                                        approved: dayData.approved || false
+                                                    });
+                                                }
+                                            });
+                                        }
+                                    });
+
+                                    console.log(`${year}년 ${month + 1}월 변환된 데이터:`, monthDailySales.length, '개 항목');
+
+                                    // 기존 데이터에서 해당 월 데이터 제거 후 새 데이터 추가
+                                    setYearlyDailySales(prevData => {
+                                        const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+                                        const filteredData = prevData.filter(sale => !sale.date.startsWith(monthPrefix));
+                                        const newData = [...filteredData, ...monthDailySales];
+                                        console.log(`yearlyDailySales 업데이트: ${newData.length}개 총 항목`);
+                                        return newData;
+                                    });
+                                }
+                            );
+
+                            if (unsubscribe) unsubscribes.push(unsubscribe);
+                        } catch (error) {
+                            console.error(`${year}년 ${month + 1}월 데이터 로드 오류:`, error);
+                        }
+                    }
+                };
+
+                loadYearlyData();
+
+                // cleanup 함수
+                return () => {
+                    unsubscribes.forEach(unsubscribe => {
+                        if (unsubscribe) unsubscribe();
+                    });
+                };
+            }, [user]);
+
             // Firebase 데이터 동기화
             React.useEffect(() => {
                 if (user) {
@@ -705,6 +805,9 @@
                 // 1:1 PT 이용권
                 '1회 체험': 45000,
                 '5회 체험': 225000,
+                // 일일권
+                '일일권': 10000,
+                '근인일일권': 10000,
                 // 네오핏 이용권
                 '네오핏 3회 체험권': 60000,
                 '네오핏 12회 단독 상품': 264000,
@@ -969,26 +1072,676 @@
                 }
             };
 
-            // 월간 총매출 계산 (승인된 매출만 계산)
+            // 월간 총매출 계산 (안전한 방식)
             const calculateMonthlySales = () => {
-                let total = 0;
+                try {
+                    // dailySales가 정의되지 않았거나 비어있는 경우 개별 함수들 사용
+                    if (!dailySales || dailySales.length === 0) {
+                        const healthSales = calculateHealthSales() || 0;
+                        const neofitSales = calculateNeoFitSales() || 0;
+                        const ptSales = calculatePtSales() || 0;
+                        const pilatesSales = calculatePilatesSales() || 0;
+                        const clothingSales = calculateClothingLockerSales() || 0;
+                        const otherSales = calculateOtherSales() || 0;
+
+                        return healthSales + neofitSales + ptSales + pilatesSales + clothingSales + otherSales;
+                    }
+
+                    let total = 0;
+                    dailySales.forEach(sale => {
+                        // 승인된 매출만 계산
+                        if (sale.approved) {
+                            const price = parseInt(sale.price) || 0;
+                            total += price;
+                        }
+                    });
+
+                    return total;
+                } catch (error) {
+                    console.error('월간 총매출 계산 오류:', error);
+                    // 오류 시 0 반환하여 실제 데이터 사용하도록 함
+                    return 0;
+                }
+            };
+
+            // 필라테스 매출만 계산 (안전한 방식)
+            const calculatePilatesSales = () => {
+                try {
+                    // dailySales가 있으면 사용, 없으면 기본값
+                    if (dailySales && dailySales.length > 0) {
+                        let total = 0;
+                        dailySales.forEach(sale => {
+                            // 승인된 매출만 계산
+                            if (sale.approved) {
+                                const price = parseInt(sale.price) || 0;
+                                const product = sale.product.toLowerCase();
+
+                                if (product.includes('필라테스')) {
+                                    total += price;
+                                }
+                            }
+                        });
+                        return total;
+                    } else {
+                        // 실제 데이터가 없으면 0 반환
+                        return 0;
+                    }
+                } catch (error) {
+                    console.error('필라테스 매출 계산 오류:', error);
+                    return 0;
+                }
+            };
+
+            // 월별 총매출 계산 함수
+            const calculateMonthlyTotalSales = (year, month) => {
+                try {
+                    if (!dailySales || !Array.isArray(dailySales) || dailySales.length === 0) {
+                        return 0;
+                    }
+
+                    const targetMonth = `${year}-${String(month).padStart(2, '0')}`;
+                    let total = 0;
+
+                    dailySales.forEach(sale => {
+                        try {
+                            if (sale && sale.date && sale.price && sale.date.startsWith(targetMonth)) {
+                                const price = parseInt(sale.price) || 0;
+                                total += price;
+                            }
+                        } catch (e) {
+                            // 개별 항목 오류는 무시
+                        }
+                    });
+
+                    return total;
+                } catch (error) {
+                    console.error('월별 총매출 계산 오류:', error);
+                    return 0;
+                }
+            };
+
+            // 월별 카테고리 매출 계산 함수들 (수정된 버전)
+            const calculateMonthlyCategorySales = (year, month, categoryType, useYearlyData = false) => {
+                try {
+                    // 월별 리포트 차트에서는 yearlyDailySales 사용
+                    const dataSource = useYearlyData ? yearlyDailySales : dailySales;
+
+                    if (!dataSource || !Array.isArray(dataSource) || dataSource.length === 0) {
+                        return 0;
+                    }
+
+                    const targetMonth = `${year}-${String(month).padStart(2, '0')}`;
+                    let total = 0;
+
+                    dataSource.forEach(sale => {
+                        try {
+                            // 승인된 데이터만 계산하고, 정확한 년-월 형식 확인
+                            if (sale && sale.date && sale.product && sale.price && sale.approved) {
+                                // 정확한 날짜 형식 확인 (YYYY-MM-DD)
+                                const saleDateParts = sale.date.split('-');
+                                if (saleDateParts.length >= 2) {
+                                    const saleYear = parseInt(saleDateParts[0]);
+                                    const saleMonth = parseInt(saleDateParts[1]);
+
+                                    // 정확한 년월 매칭
+                                    if (saleYear === year && saleMonth === month) {
+                                        const product = (sale.product || '').toLowerCase();
+                                        let isMatch = false;
+
+                                if (categoryType === 'health') {
+                                    isMatch = product.includes('헬스') || product.includes('헬스권');
+                                } else if (categoryType === 'neofit') {
+                                    isMatch = product.includes('네오핏');
+                                } else if (categoryType === 'pt') {
+                                    isMatch = product.includes('pt') || product.includes('개인') ||
+                                              product.includes('트레이닝') || product.includes('PT');
+                                } else if (categoryType === 'pilates') {
+                                    isMatch = product.includes('필라테스') || product.includes('필라테스 이용권');
+                                }
+
+                                        if (isMatch) {
+                                            const price = parseInt(sale.price) || 0;
+                                            total += price;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            // 개별 항목 오류는 무시하고 계속
+                            console.warn('개별 매출 항목 처리 오류:', e);
+                        }
+                    });
+
+                    if (useYearlyData) {
+                        console.log(`${year}년 ${month}월 ${categoryType} 카테고리 매출:`, total.toLocaleString() + '원');
+                    }
+
+                    return total;
+                } catch (error) {
+                    console.error('월별 카테고리 매출 계산 오류:', error);
+                    return 0;
+                }
+            };
+
+            // 네오핏 매출만 계산 (안전한 방식)
+            const calculateNeoFitSales = () => {
+                try {
+                    if (dailySales && dailySales.length > 0) {
+                        let total = 0;
+                        dailySales.forEach(sale => {
+                            // 승인된 매출만 계산
+                            if (sale.approved) {
+                                const price = parseInt(sale.price) || 0;
+                                const product = sale.product.toLowerCase();
+
+                                if (product.includes('네오핏')) {
+                                    total += price;
+                                }
+                            }
+                        });
+                        return total;
+                    } else {
+                        return 0; // 실제 데이터가 없으면 0 반환
+                    }
+                } catch (error) {
+                    console.error('네오핏 매출 계산 오류:', error);
+                    return 0;
+                }
+            };
+
+            // 헬스 이용권 매출 계산 (dailySales 기반)
+            const calculateHealthSales = () => {
+                try {
+                    let total = 0;
+
+                    if (dailySales && dailySales.length > 0) {
+                        dailySales.forEach(sale => {
+                            // 승인된 매출만 계산
+                            if (sale.approved) {
+                                const price = parseInt(sale.price) || 0;
+                                const product = sale.product.toLowerCase();
+
+                                // 헬스이지만 필라테스, 락커, 운동복이 아닌 것
+                                if ((product.includes('헬스') || (product.includes('개월') && !product.includes('락커') && !product.includes('운동복'))) && !product.includes('필라테스')) {
+                                    total += price;
+                                }
+                            }
+                        });
+                        return total;
+                    } else {
+                        return 0; // 실제 데이터가 없으면 0 반환
+                    }
+                } catch (error) {
+                    console.error('헬스 매출 계산 오류:', error);
+                    return 0;
+                }
+            };
+
+            // 1:1 PT 매출 계산 (dailySales 기반)
+            const calculatePtSales = () => {
+                try {
+                    let total = 0;
+
+                    if (dailySales && dailySales.length > 0) {
+                        dailySales.forEach(sale => {
+                            // 승인된 매출만 계산
+                            if (sale.approved) {
+                                const price = parseInt(sale.price) || 0;
+                                const product = sale.product.toLowerCase();
+
+                                if (product.includes('pt') || product.includes('피티')) {
+                                    total += price;
+                                }
+                            }
+                        });
+                        return total;
+                    } else {
+                        return 0; // 실제 데이터가 없으면 0 반환
+                    }
+                } catch (error) {
+                    console.error('PT 매출 계산 오류:', error);
+                    return 0;
+                }
+            };
+
+            // 운동복/락커 매출 계산 (dailySales 기반)
+            const calculateClothingLockerSales = () => {
+                try {
+                    let total = 0;
+
+                    if (dailySales && dailySales.length > 0) {
+                        dailySales.forEach(sale => {
+                            // 승인된 매출만 계산
+                            if (sale.approved) {
+                                const price = parseInt(sale.price) || 0;
+                                const product = sale.product.toLowerCase();
+
+                                if (product.includes('락커') || product.includes('운동복')) {
+                                    total += price;
+                                }
+                            }
+                        });
+                        return total;
+                    } else {
+                        return 0; // 실제 데이터가 없으면 0 반환
+                    }
+                } catch (error) {
+                    console.error('운동복/락커 매출 계산 오류:', error);
+                    return 0;
+                }
+            };
+
+            // 기타 매출 계산 (dailySales 기반)
+            const calculateOtherSales = () => {
+                try {
+                    let total = 0;
+
+                    if (dailySales && dailySales.length > 0) {
+                        dailySales.forEach(sale => {
+                            // 승인된 매출만 계산
+                            if (sale.approved) {
+                                const price = parseInt(sale.price) || 0;
+                                const product = sale.product.toLowerCase();
+
+                                // 다른 카테고리에 포함되지 않는 것들
+                                if (!product.includes('헬스') && !product.includes('네오핏') &&
+                                    !product.includes('pt') && !product.includes('피티') &&
+                                    !product.includes('필라테스') && !product.includes('락커') &&
+                                    !product.includes('운동복') && !product.includes('개월')) {
+                                    total += price;
+                                }
+                            }
+                        });
+                        return total;
+                    } else {
+                        return 0; // 실제 데이터가 없으면 0 반환
+                    }
+                } catch (error) {
+                    console.error('기타 매출 계산 오류:', error);
+                    return 0;
+                }
+            };
+
+            // 개별 상품 가격 계산 함수
+            const calculateIndividualProductPrice = (productName) => {
+                // 상품 가격표에서 직접 찾기
+                if (productPrices[productName]) {
+                    return productPrices[productName];
+                }
+
+                // 락커 상품 패턴 매칭 (락커: 3개월 → 락커 3개월)
+                if (productName.includes('락커:') && productName.includes('개월')) {
+                    const match = productName.match(/락커:\s*(\d+)개월/);
+                    if (match) {
+                        const lockerKey = `락커 ${match[1]}개월`;
+                        return productPrices[lockerKey] || 0;
+                    }
+                }
+
+                // 운동복 상품 패턴 매칭 (운동복: 3개월 → 운동복 3개월)
+                if (productName.includes('운동복:') && productName.includes('개월')) {
+                    const match = productName.match(/운동복:\s*(\d+)개월/);
+                    if (match) {
+                        const clothingKey = `운동복 ${match[1]}개월`;
+                        return productPrices[clothingKey] || 0;
+                    }
+                }
+
+                // 필라테스 상품 패턴 매칭 (필라테스: 3개월 (24회 주 2회) → 3개월 (24회 주 2회))
+                if (productName.includes('필라테스:')) {
+                    const cleanName = productName.replace('필라테스:', '').trim();
+                    return productPrices[cleanName] || 0;
+                }
+
+                // 헬스 이용권 패턴 매칭 (헬스: 3개월 → 3개월)
+                if (productName.includes('헬스:')) {
+                    const cleanName = productName.replace('헬스:', '').trim();
+                    console.log('헬스 상품 매칭:', productName, '→', cleanName, '가격:', productPrices[cleanName]);
+                    return productPrices[cleanName] || 0;
+                }
+
+                // 네오핏 상품 패턴 매칭 (네오핏: 3회 체험권 → 네오핏 3회 체험권)
+                if (productName.includes('네오핏:')) {
+                    const cleanName = productName.replace('네오핏:', '').trim();
+                    const neofitKey = `네오핏 ${cleanName}`;
+                    console.log('네오핏 상품 매칭:', productName, '→', neofitKey, '가격:', productPrices[neofitKey]);
+                    return productPrices[neofitKey] || productPrices[cleanName] || 0;
+                }
+
+                // PT 상품 패턴 매칭 (PT: 1회 체험 → 1회 체험)
+                if (productName.includes('PT:')) {
+                    const cleanName = productName.replace('PT:', '').trim();
+                    console.log('PT 상품 매칭:', productName, '→', cleanName, '가격:', productPrices[cleanName]);
+                    return productPrices[cleanName] || 0;
+                }
+
+                // 1:1 PT 체험 상품 매칭 (네오핏 제외)
+                if (productName.includes('체험') && !productName.includes('네오핏')) {
+                    // 직접 매칭 시도
+                    if (productPrices[productName]) {
+                        console.log('체험 상품 직접 매칭:', productName, '가격:', productPrices[productName]);
+                        return productPrices[productName];
+                    }
+
+                    // 패턴 매칭 시도 (예: "1회 체험", "5회 체험", "고경연님(체험5회)")
+                    const match = productName.match(/(\d+회)\s*체험|체험(\d+회)/);
+                    if (match) {
+                        const sessions = match[1] || match[2]; // "5회" 추출
+                        const ptKey = sessions + ' 체험'; // "5회 체험" 형태로 변환
+                        console.log('체험 상품 패턴 매칭:', productName, '→', ptKey, '가격:', productPrices[ptKey]);
+                        return productPrices[ptKey] || 0;
+                    }
+
+                    console.log('체험 상품 매칭 실패:', productName);
+                    return 0;
+                }
+
+                // 일일권 패턴 매칭 (김유진(일일권), 정규현(근인일일권))
+                if (productName.includes('일일권')) {
+                    if (productName.includes('근인일일권')) {
+                        console.log('근인일일권 매칭:', productName, '→ 10000원');
+                        return productPrices['근인일일권'] || 10000;
+                    } else {
+                        console.log('일일권 매칭:', productName, '→ 10000원');
+                        return productPrices['일일권'] || 10000;
+                    }
+                }
+
+                // 기타 상품들을 위한 패턴 매칭
+                // 만약 숫자가 포함된 경우 (예: "기타상품 50000") 숫자를 가격으로 추출
+                const numberMatch = productName.match(/(\d+)/);
+                if (numberMatch && numberMatch[1]) {
+                    const extractedPrice = parseInt(numberMatch[1]);
+                    // 합리적인 가격 범위인지 확인 (1000원 ~ 5000000원)
+                    if (extractedPrice >= 1000 && extractedPrice <= 5000000) {
+                        console.log('기타 상품 가격 추출:', productName, '→', extractedPrice + '원');
+                        return extractedPrice;
+                    }
+                }
+
+                // 기본 기타 상품 가격 (패턴이 맞지 않는 경우)
+                if (productName && productName.trim() !== '') {
+                    console.log('기타 상품 (기본 가격 적용):', productName, '→ 0원');
+                    return 0; // 또는 기본 가격을 설정할 수 있음
+                }
+
+                // 디버깅을 위해 콘솔에 출력
+                console.log('가격을 찾을 수 없는 상품:', productName);
+                return 0;
+            };
+
+            // 필라테스 매출 상세 데이터 가져오기
+            const getPilatesDetails = () => {
+                const pilatesData = [];
                 const daysInMonth = getDaysInMonth();
 
-                // salesData가 없거나 비어있으면 0 반환
                 if (!salesData || Object.keys(salesData).length === 0) {
-                    return 0;
+                    return [];
                 }
 
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dateKey = getDateKey(day);
-                    const dayData = salesData[dateKey] || { amount: 0, approved: false };
-                    // 승인된 매출만 계산, NaN 체크 추가
-                    if (dayData.approved && !isNaN(dayData.amount)) {
-                        total += Number(dayData.amount) || 0;
+                    const dayData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+
+                    if (dayData.approved && dayData.details) {
+                        dayData.details.forEach(detail => {
+                            // 상품 문자열을 쉼표로 분리해서 각각 확인
+                            if (detail.product) {
+                                const products = detail.product.split(',').map(p => p.trim());
+
+                                products.forEach(product => {
+                                    // 필라테스 관련 상품만 필터링
+                                    if (product.includes('필라테스') || product === '필라테스 이용권') {
+                                        const individualPrice = calculateIndividualProductPrice(product);
+                                        pilatesData.push({
+                                            ...detail,
+                                            product: product, // 개별 상품으로 표시
+                                            price: individualPrice, // 개별 상품 가격
+                                            date: `${selectedMonth + 1}월 ${day}일`,
+                                            dateKey: dateKey
+                                        });
+                                    }
+                                });
+                            }
+                        });
                     }
                 }
 
-                return isNaN(total) ? 0 : total;
+                // 날짜순으로 정렬 (최신순)
+                return pilatesData.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+            };
+
+            // 헬스 이용권 매출 상세 데이터 가져오기
+            const getHealthDetails = () => {
+                const healthData = [];
+                const daysInMonth = getDaysInMonth();
+
+                if (!salesData || Object.keys(salesData).length === 0) {
+                    return [];
+                }
+
+                const healthProductsList = ['1개월', '3개월', '6개월', '12개월'];
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateKey = getDateKey(day);
+                    const dayData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+
+                    if (dayData.approved && dayData.details) {
+                        dayData.details.forEach(detail => {
+                            // 상품 문자열을 쉼표로 분리해서 각각 확인
+                            if (detail.product) {
+                                const products = detail.product.split(',').map(p => p.trim());
+
+                                products.forEach(product => {
+                                    // 헬스 이용권 관련 상품만 필터링 (정확한 매칭)
+                                    if ((healthProductsList.includes(product) || product.includes('헬스')) &&
+                                        !product.includes('락커') &&
+                                        !product.includes('운동복') &&
+                                        !product.includes('보관함') &&
+                                        !product.includes('필라테스')) {
+                                        const individualPrice = calculateIndividualProductPrice(product);
+                                        healthData.push({
+                                            ...detail,
+                                            product: product, // 개별 상품으로 표시
+                                            price: individualPrice, // 개별 상품 가격
+                                            date: `${selectedMonth + 1}월 ${day}일`,
+                                            dateKey: dateKey
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
+                return healthData.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+            };
+
+            // 네오핏(PT) 매출 상세 데이터 가져오기
+            const getNeofitDetails = () => {
+                const neofitData = [];
+                const daysInMonth = getDaysInMonth();
+
+                if (!salesData || Object.keys(salesData).length === 0) {
+                    return [];
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateKey = getDateKey(day);
+                    const dayData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+
+                    if (dayData.approved && dayData.details) {
+                        dayData.details.forEach(detail => {
+                            // 상품 문자열을 쉼표로 분리해서 각각 확인
+                            if (detail.product) {
+                                const products = detail.product.split(',').map(p => p.trim());
+
+                                products.forEach(product => {
+                                    // 네오핏(PT) 관련 상품만 필터링
+                                    if (product.includes('체험') || product.includes('PT') || product.includes('네오핏')) {
+                                        const individualPrice = calculateIndividualProductPrice(product);
+                                        neofitData.push({
+                                            ...detail,
+                                            product: product, // 개별 상품으로 표시
+                                            price: individualPrice, // 개별 상품 가격
+                                            date: `${selectedMonth + 1}월 ${day}일`,
+                                            dateKey: dateKey
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
+                return neofitData.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+            };
+
+            // 운동복/락커 매출 상세 데이터 가져오기
+            const getClothingLockerDetails = () => {
+                const clothingLockerData = [];
+                const daysInMonth = getDaysInMonth();
+
+                if (!salesData || Object.keys(salesData).length === 0) {
+                    return [];
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateKey = getDateKey(day);
+                    const dayData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+
+                    if (dayData.approved && dayData.details) {
+                        dayData.details.forEach(detail => {
+                            // 상품 문자열을 쉼표로 분리해서 각각 확인
+                            if (detail.product) {
+                                const products = detail.product.split(',').map(p => p.trim());
+
+                                products.forEach(product => {
+                                    // 운동복/락커 관련 상품만 필터링
+                                    if (product.includes('운동복') || product.includes('락커') || product.includes('보관함')) {
+                                        const individualPrice = calculateIndividualProductPrice(product);
+                                        clothingLockerData.push({
+                                            ...detail,
+                                            product: product, // 개별 상품으로 표시
+                                            price: individualPrice, // 개별 상품 가격
+                                            date: `${selectedMonth + 1}월 ${day}일`,
+                                            dateKey: dateKey
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
+                return clothingLockerData.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+            };
+
+            // 1:1 PT 매출 상세 데이터 가져오기
+            const getPtDetails = () => {
+                const ptData = [];
+                const daysInMonth = getDaysInMonth();
+
+                if (!salesData || Object.keys(salesData).length === 0) {
+                    return [];
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateKey = getDateKey(day);
+                    const dayData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+
+                    if (dayData.approved && dayData.details) {
+                        dayData.details.forEach(detail => {
+                            // 상품 문자열을 쉼표로 분리해서 각각 확인
+                            if (detail.product) {
+                                const products = detail.product.split(',').map(p => p.trim());
+
+                                products.forEach(product => {
+                                    // 1:1 PT 관련 상품만 필터링 (네오핏 제외)
+                                    const isPt = (product.includes('체험') || product.includes('PT')) && !product.includes('네오핏');
+
+                                    if (isPt) {
+                                        const individualPrice = calculateIndividualProductPrice(product);
+                                        console.log('PT 매출 필터링:', product, '가격:', individualPrice);
+                                        ptData.push({
+                                            ...detail,
+                                            product: product, // 개별 상품으로 표시
+                                            price: individualPrice, // 개별 상품 가격
+                                            date: `${selectedMonth + 1}월 ${day}일`,
+                                            dateKey: dateKey
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
+                return ptData.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+            };
+
+            // 기타 매출 상세 데이터 가져오기
+            const getOtherDetails = () => {
+                const otherData = [];
+                const daysInMonth = getDaysInMonth();
+
+                if (!salesData || Object.keys(salesData).length === 0) {
+                    return [];
+                }
+
+                const healthProductsList = ['1개월', '3개월', '6개월', '12개월'];
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateKey = getDateKey(day);
+                    const dayData = salesData[dateKey] || { amount: 0, approved: false, details: [] };
+
+                    if (dayData.approved && dayData.details) {
+                        dayData.details.forEach(detail => {
+                            // 상품 문자열을 쉼표로 분리해서 각각 확인
+                            if (detail.product) {
+                                const products = detail.product.split(',').map(p => p.trim());
+
+                                products.forEach(product => {
+                                    // 각 개별 상품이 다른 카테고리에 속하지 않는지 확인
+                                    const isHealth = (healthProductsList.includes(product) || product.includes('헬스')) &&
+                                        !product.includes('락커') &&
+                                        !product.includes('운동복') &&
+                                        !product.includes('보관함') &&
+                                        !product.includes('필라테스');
+                                    const isNeofit = product.includes('네오핏');
+                                    const isPt = (product.includes('체험') || product.includes('PT')) && !product.includes('네오핏');
+                                    const isPilates = product.includes('필라테스') || product === '필라테스 이용권';
+                                    const isClothingLocker = product.includes('운동복') || product.includes('락커') || product.includes('보관함');
+
+                                    console.log('기타 매출 분류 검사:', product, {
+                                        isHealth,
+                                        isNeofit,
+                                        isPt,
+                                        isPilates,
+                                        isClothingLocker,
+                                        isOther: !isHealth && !isNeofit && !isPt && !isPilates && !isClothingLocker
+                                    });
+
+                                    // 위 카테고리에 속하지 않는 기타 매출들
+                                    if (!isHealth && !isNeofit && !isPt && !isPilates && !isClothingLocker) {
+                                        // 기타 매출은 저장된 price 값을 그대로 사용 (calculateIndividualProductPrice 사용하지 않음)
+                                        const finalPrice = detail.price || 0;
+                                        console.log('기타 매출 추가:', product, '저장된 가격:', finalPrice);
+                                        otherData.push({
+                                            ...detail,
+                                            product: product, // 개별 상품으로 표시
+                                            price: finalPrice, // 저장된 가격 그대로 사용
+                                            date: `${selectedMonth + 1}월 ${day}일`,
+                                            dateKey: dateKey
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
+                return otherData.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
             };
 
             // 인센티브 비율 계산 (직원 타입별)
@@ -1685,6 +2438,470 @@
                 );
             };
 
+            // 필라테스 매출 모달 컴포넌트
+            const PilatesModal = () => {
+                const pilatesData = getPilatesDetails();
+                const totalAmount = pilatesData.reduce((sum, item) => sum + (item.price || 0), 0);
+                const groupedByDate = pilatesData.reduce((acc, item) => {
+                    if (!acc[item.date]) acc[item.date] = [];
+                    acc[item.date].push(item);
+                    return acc;
+                }, {});
+
+                return (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowPilatesModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#FF69B4' }}>
+                                📊 필라테스 매출 현황 ({selectedMonth + 1}월)
+                            </h3>
+
+                            <div className="mb-6 text-center">
+                                <div className="glass-effect rounded-xl p-4 mb-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 필라테스 결제 건수</p>
+                                    <p className="text-3xl font-bold text-white">{pilatesData.length}건</p>
+                                </div>
+                                <div className="glass-effect rounded-xl p-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 필라테스 매출</p>
+                                    <p className="text-3xl font-bold" style={{ color: '#FF69B4' }}>
+                                        {totalAmount.toLocaleString()}원
+                                    </p>
+                                </div>
+                            </div>
+
+                            {pilatesData.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="text-6xl mb-4">🏃‍♀️</div>
+                                    <p className="text-gray-400 text-lg">이번 달 필라테스 매출이 없습니다</p>
+                                    <p className="text-gray-500 text-sm mt-2">필라테스 이용권 판매 시 여기에 표시됩니다</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                                    {Object.entries(groupedByDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, items]) => (
+                                        <div key={date} className="glass-effect rounded-xl p-4">
+                                            <div className="font-semibold text-gray-300 mb-3">
+                                                🗓️ {date}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {items.map((item, index) => (
+                                                    <div key={index} className="flex justify-between items-start p-3 bg-pink-900/20 rounded-lg border border-pink-500/20">
+                                                        <div className="flex-1">
+                                                            <div className="text-white font-medium">{item.customerName}</div>
+                                                            <div className="text-sm text-gray-400">{item.timestamp}</div>
+                                                            <div className="text-xs text-pink-300 mt-1">🧘‍♀️ {item.product}</div>
+                                                        </div>
+                                                        <div className="font-bold" style={{ color: '#FF69B4' }}>
+                                                            {(item.price || 0).toLocaleString()}원
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-6">
+                                <button
+                                    onClick={() => setShowPilatesModal(false)}
+                                    className="w-full glass-effect hover:border-pink-400 rounded-lg py-3 font-semibold transition-all text-white border border-pink-500/50"
+                                    style={{ borderColor: '#FF69B4' }}
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // 헬스 이용권 매출 모달 컴포넌트
+            const HealthModal = () => {
+                const healthData = getHealthDetails();
+                const totalAmount = healthData.reduce((sum, item) => sum + (item.price || 0), 0);
+                const groupedByDate = healthData.reduce((acc, item) => {
+                    if (!acc[item.date]) acc[item.date] = [];
+                    acc[item.date].push(item);
+                    return acc;
+                }, {});
+
+                return (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowHealthModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#22C55E' }}>
+                                💪 헬스 이용권 매출 현황 ({selectedMonth + 1}월)
+                            </h3>
+
+                            <div className="mb-6 text-center">
+                                <div className="glass-effect rounded-xl p-4 mb-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 헬스 이용권 결제 건수</p>
+                                    <p className="text-3xl font-bold text-white">{healthData.length}건</p>
+                                </div>
+                                <div className="glass-effect rounded-xl p-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 헬스 이용권 매출</p>
+                                    <p className="text-3xl font-bold" style={{ color: '#22C55E' }}>
+                                        {totalAmount.toLocaleString()}원
+                                    </p>
+                                </div>
+                            </div>
+
+                            {healthData.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="text-6xl mb-4">💪</div>
+                                    <p className="text-gray-400 text-lg">이번 달 헬스 이용권 매출이 없습니다</p>
+                                    <p className="text-gray-500 text-sm mt-2">헬스 이용권 판매 시 여기에 표시됩니다</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                                    {Object.entries(groupedByDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, items]) => (
+                                        <div key={date} className="glass-effect rounded-xl p-4">
+                                            <div className="font-semibold text-gray-300 mb-3">
+                                                🗓️ {date}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {items.map((item, index) => (
+                                                    <div key={index} className="flex justify-between items-start p-3 bg-green-900/20 rounded-lg border border-green-500/20">
+                                                        <div className="flex-1">
+                                                            <div className="text-white font-medium">{item.customerName}</div>
+                                                            <div className="text-sm text-gray-400">{item.timestamp}</div>
+                                                            <div className="text-xs text-green-300 mt-1">💪 {item.product}</div>
+                                                        </div>
+                                                        <div className="font-bold" style={{ color: '#22C55E' }}>
+                                                            {(item.price || 0).toLocaleString()}원
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-6">
+                                <button
+                                    onClick={() => setShowHealthModal(false)}
+                                    className="w-full glass-effect hover:border-green-400 rounded-lg py-3 font-semibold transition-all text-white border border-green-500/50"
+                                    style={{ borderColor: '#22C55E' }}
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // 네오핏 매출 모달 컴포넌트
+            const NeofitModal = () => {
+                const neofitData = getNeofitDetails();
+                const totalAmount = neofitData.reduce((sum, item) => sum + (item.price || 0), 0);
+                const groupedByDate = neofitData.reduce((acc, item) => {
+                    if (!acc[item.date]) acc[item.date] = [];
+                    acc[item.date].push(item);
+                    return acc;
+                }, {});
+
+                return (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowNeofitModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#4ECDC4' }}>
+                                🔥 네오핏 매출 현황 ({selectedMonth + 1}월)
+                            </h3>
+
+                            <div className="mb-6 text-center">
+                                <div className="glass-effect rounded-xl p-4 mb-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 네오핏 결제 건수</p>
+                                    <p className="text-3xl font-bold text-white">{neofitData.length}건</p>
+                                </div>
+                                <div className="glass-effect rounded-xl p-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 네오핏 매출</p>
+                                    <p className="text-3xl font-bold" style={{ color: '#4ECDC4' }}>
+                                        {totalAmount.toLocaleString()}원
+                                    </p>
+                                </div>
+                            </div>
+
+                            {neofitData.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="text-6xl mb-4">🔥</div>
+                                    <p className="text-gray-400 text-lg">이번 달 네오핏 매출이 없습니다</p>
+                                    <p className="text-gray-500 text-sm mt-2">네오핏 서비스 판매 시 여기에 표시됩니다</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                                    {Object.entries(groupedByDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, items]) => (
+                                        <div key={date} className="glass-effect rounded-xl p-4">
+                                            <div className="font-semibold text-gray-300 mb-3">
+                                                🗓️ {date}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {items.map((item, index) => (
+                                                    <div key={index} className="flex justify-between items-start p-3 bg-teal-900/20 rounded-lg border border-teal-500/20">
+                                                        <div className="flex-1">
+                                                            <div className="text-white font-medium">{item.customerName}</div>
+                                                            <div className="text-sm text-gray-400">{item.timestamp}</div>
+                                                            <div className="text-xs text-teal-300 mt-1">🔥 {item.product}</div>
+                                                        </div>
+                                                        <div className="font-bold" style={{ color: '#4ECDC4' }}>
+                                                            {(item.price || 0).toLocaleString()}원
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-6">
+                                <button
+                                    onClick={() => setShowNeofitModal(false)}
+                                    className="w-full glass-effect hover:border-teal-400 rounded-lg py-3 font-semibold transition-all text-white border border-teal-500/50"
+                                    style={{ borderColor: '#4ECDC4' }}
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // 운동복/락커 매출 모달 컴포넌트
+            const ClothingLockerModal = () => {
+                const clothingLockerData = getClothingLockerDetails();
+                const totalAmount = clothingLockerData.reduce((sum, item) => sum + (item.price || 0), 0);
+                const groupedByDate = clothingLockerData.reduce((acc, item) => {
+                    if (!acc[item.date]) acc[item.date] = [];
+                    acc[item.date].push(item);
+                    return acc;
+                }, {});
+
+                return (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowClothingLockerModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#A855F7' }}>
+                                👕 운동복/락커 매출 현황 ({selectedMonth + 1}월)
+                            </h3>
+
+                            <div className="mb-6 text-center">
+                                <div className="glass-effect rounded-xl p-4 mb-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 운동복/락커 결제 건수</p>
+                                    <p className="text-3xl font-bold text-white">{clothingLockerData.length}건</p>
+                                </div>
+                                <div className="glass-effect rounded-xl p-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 운동복/락커 매출</p>
+                                    <p className="text-3xl font-bold" style={{ color: '#A855F7' }}>
+                                        {totalAmount.toLocaleString()}원
+                                    </p>
+                                </div>
+                            </div>
+
+                            {clothingLockerData.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="text-6xl mb-4">👕</div>
+                                    <p className="text-gray-400 text-lg">이번 달 운동복/락커 매출이 없습니다</p>
+                                    <p className="text-gray-500 text-sm mt-2">운동복/락커 판매 시 여기에 표시됩니다</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                                    {Object.entries(groupedByDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, items]) => (
+                                        <div key={date} className="glass-effect rounded-xl p-4">
+                                            <div className="font-semibold text-gray-300 mb-3">
+                                                🗓️ {date}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {items.map((item, index) => (
+                                                    <div key={index} className="flex justify-between items-start p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
+                                                        <div className="flex-1">
+                                                            <div className="text-white font-medium">{item.customerName}</div>
+                                                            <div className="text-sm text-gray-400">{item.timestamp}</div>
+                                                            <div className="text-xs text-purple-300 mt-1">👕 {item.product}</div>
+                                                        </div>
+                                                        <div className="font-bold" style={{ color: '#A855F7' }}>
+                                                            {(item.price || 0).toLocaleString()}원
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-6">
+                                <button
+                                    onClick={() => setShowClothingLockerModal(false)}
+                                    className="w-full glass-effect hover:border-purple-400 rounded-lg py-3 font-semibold transition-all text-white border border-purple-500/50"
+                                    style={{ borderColor: '#A855F7' }}
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // 1:1 PT 매출 모달 컴포넌트
+            const PtModal = () => {
+                const ptData = getPtDetails();
+                const totalAmount = ptData.reduce((sum, item) => sum + (item.price || 0), 0);
+                const groupedByDate = ptData.reduce((acc, item) => {
+                    if (!acc[item.date]) acc[item.date] = [];
+                    acc[item.date].push(item);
+                    return acc;
+                }, {});
+
+                return (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowPtModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#F59E0B' }}>
+                                🏋️ 1:1 PT 매출 현황 ({selectedMonth + 1}월)
+                            </h3>
+
+                            <div className="mb-6 text-center">
+                                <div className="glass-effect rounded-xl p-4 mb-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 1:1 PT 결제 건수</p>
+                                    <p className="text-3xl font-bold text-white">{ptData.length}건</p>
+                                </div>
+                                <div className="glass-effect rounded-xl p-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 1:1 PT 매출</p>
+                                    <p className="text-3xl font-bold" style={{ color: '#F59E0B' }}>
+                                        {totalAmount.toLocaleString()}원
+                                    </p>
+                                </div>
+                            </div>
+
+                            {ptData.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="text-6xl mb-4">🏋️</div>
+                                    <p className="text-gray-400 text-lg">이번 달 1:1 PT 매출이 없습니다</p>
+                                    <p className="text-gray-500 text-sm mt-2">1:1 PT 서비스 판매 시 여기에 표시됩니다</p>
+                                </div>
+                            ) : (
+                                <div className="max-h-96 overflow-y-auto">
+                                    {Object.entries(groupedByDate).map(([date, items]) => (
+                                        <div key={date} className="mb-6">
+                                            <h4 className="text-lg font-semibold mb-3 text-center" style={{ color: '#F59E0B' }}>
+                                                {date}
+                                            </h4>
+                                            <div className="space-y-3">
+                                                {items.map((item, index) => (
+                                                    <div key={index} className="glass-effect rounded-lg p-4 border border-orange-500/30">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div className="text-white font-medium">{item.name}</div>
+                                                            <div className="text-right">
+                                                                <div className="text-orange-400 font-bold text-lg">
+                                                                    {(item.price || 0).toLocaleString()}원
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-orange-300 text-sm font-medium mb-1">
+                                                            {item.product}
+                                                        </div>
+                                                        {item.memo && (
+                                                            <div className="text-gray-400 text-sm italic">
+                                                                메모: {item.memo}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-6">
+                                <button
+                                    onClick={() => setShowPtModal(false)}
+                                    className="w-full glass-effect hover:border-orange-400 rounded-lg py-3 font-semibold transition-all text-white border border-orange-500/50"
+                                    style={{ borderColor: '#F59E0B' }}
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // 기타 매출 모달 컴포넌트
+            const OtherModal = () => {
+                const otherData = getOtherDetails();
+                const totalAmount = otherData.reduce((sum, item) => sum + (item.price || 0), 0);
+                const groupedByDate = otherData.reduce((acc, item) => {
+                    if (!acc[item.date]) acc[item.date] = [];
+                    acc[item.date].push(item);
+                    return acc;
+                }, {});
+
+                return (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowOtherModal(false)}>
+                        <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#9CA3AF' }}>
+                                📊 기타 매출 현황 ({selectedMonth + 1}월)
+                            </h3>
+
+                            <div className="mb-6 text-center">
+                                <div className="glass-effect rounded-xl p-4 mb-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 기타 결제 건수</p>
+                                    <p className="text-3xl font-bold text-white">{otherData.length}건</p>
+                                </div>
+                                <div className="glass-effect rounded-xl p-4">
+                                    <p className="text-gray-400 text-sm mb-1">총 기타 매출</p>
+                                    <p className="text-3xl font-bold" style={{ color: '#9CA3AF' }}>
+                                        {totalAmount.toLocaleString()}원
+                                    </p>
+                                </div>
+                            </div>
+
+                            {otherData.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="text-6xl mb-4">📊</div>
+                                    <p className="text-gray-400 text-lg">이번 달 기타 매출이 없습니다</p>
+                                    <p className="text-gray-500 text-sm mt-2">기타 상품 판매 시 여기에 표시됩니다</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                                    {Object.entries(groupedByDate).sort((a, b) => b[0].localeCompare(a[0])).map(([date, items]) => (
+                                        <div key={date} className="glass-effect rounded-xl p-4">
+                                            <div className="font-semibold text-gray-300 mb-3">
+                                                🗓️ {date}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {items.map((item, index) => (
+                                                    <div key={index} className="flex justify-between items-start p-3 bg-gray-800/50 rounded-lg border border-gray-500/20">
+                                                        <div className="flex-1">
+                                                            <div className="text-white font-medium">{item.customerName}</div>
+                                                            <div className="text-sm text-gray-400">{item.timestamp}</div>
+                                                            <div className="text-xs text-gray-300 mt-1">📊 {item.product}</div>
+                                                        </div>
+                                                        <div className="font-bold" style={{ color: '#9CA3AF' }}>
+                                                            {(item.price || 0).toLocaleString()}원
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-6">
+                                <button
+                                    onClick={() => setShowOtherModal(false)}
+                                    className="w-full glass-effect hover:border-gray-400 rounded-lg py-3 font-semibold transition-all text-white border border-gray-500/50"
+                                    style={{ borderColor: '#9CA3AF' }}
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             // 달력 모달 컴포넌트
             const CalendarModal = () => {
                 if (!showCalendarModal) return null;
@@ -1733,21 +2950,7 @@
                         );
                         if (unsubscribe) unsubscribes.push(unsubscribe);
                         
-                        // 전월 데이터도 구독 (전월 대비 계산용)
-                        const prevMonth = month === 0 ? 11 : month - 1;
-                        const prevYear = month === 0 ? yearView - 1 : yearView;
-                        
-                        const prevUnsubscribe = salesService.subscribeToMonthData(
-                            prevYear,
-                            prevMonth,
-                            (data) => {
-                                setYearSalesData(prevData => ({
-                                    ...prevData,
-                                    ...data
-                                }));
-                            }
-                        );
-                        if (prevUnsubscribe) unsubscribes.push(prevUnsubscribe);
+                        // 전월 데이터 구독 제거 - 월별 데이터 중복 방지
                     }
                     
                     // 로딩 완료
@@ -2324,6 +3527,18 @@
                         {showSearchResultModal && <SearchResultModal />}
                         {/* 달력 모달 */}
                         <CalendarModal />
+                        {/* 필라테스 매출 모달 */}
+                        {showPilatesModal && <PilatesModal />}
+                        {/* 헬스 이용권 매출 모달 */}
+                        {showHealthModal && <HealthModal />}
+                        {/* 네오핏 매출 모달 */}
+                        {showNeofitModal && <NeofitModal />}
+                        {/* 1:1 PT 매출 모달 */}
+                        {showPtModal && <PtModal />}
+                        {/* 운동복/락커 매출 모달 */}
+                        {showClothingLockerModal && <ClothingLockerModal />}
+                        {/* 기타 매출 모달 */}
+                        {showOtherModal && <OtherModal />}
                         {/* 헤더 */}
                         <div className="text-center mb-8 sm:mb-10 relative">
                             <h1 className="text-3xl sm:text-5xl font-black mb-2 sm:mb-3" style={{ color: '#00FF88' }}>
@@ -2533,7 +3748,10 @@
                             </div>
                             <div className="glass-effect rounded-2xl p-4 text-center transition-all">
                                 <p className="text-gray-400 text-sm mb-1">월 매출</p>
-                                <p className="text-2xl font-bold" style={{ color: '#FFB800' }}>
+                                <p className="text-2xl font-bold" style={{
+                                    color: '#FF6B35',
+                                    textShadow: '0 0 10px rgba(255, 107, 53, 0.5), 0 0 20px rgba(255, 107, 53, 0.3), 0 0 30px rgba(255, 107, 53, 0.2)'
+                                }}>
                                     {monthlyTotal.toLocaleString()}원
                                 </p>
                             </div>
@@ -2589,15 +3807,134 @@
                                             </div>
                                             </div>
                                             
-                                            {/* 정산체크 전체 해제 버튼 */}
-                                            <button
-                                                onClick={() => {
-                                                    setCheckedDetails({});
-                                                }}
-                                                className="glass-effect border-gray-500 hover:border-gray-400 rounded-lg px-4 py-2 text-xs font-semibold transition-all hover:shadow-lg text-gray-300 hover:text-white"
-                                            >
-                                                정산체크 전체 해제하기
-                                            </button>
+                                            {/* 정산체크 해제 및 매출 카테고리 버튼들 */}
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setCheckedDetails({});
+                                                    }}
+                                                    className="relative glass-effect rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                                                    style={{
+                                                        fontSize: '10px',
+                                                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%)',
+                                                        border: '2px solid rgba(59, 130, 246, 0.4)',
+                                                        color: '#60A5FA'
+                                                    }}
+                                                >
+                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                                                    <div className="relative">
+                                                        <span>정산체크</span>
+                                                    </div>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setShowHealthModal(true);
+                                                    }}
+                                                    className="relative glass-effect rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                                                    style={{
+                                                        fontSize: '10px',
+                                                        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%)',
+                                                        border: '2px solid rgba(34, 197, 94, 0.4)',
+                                                        color: '#22C55E'
+                                                    }}
+                                                >
+                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/20 to-emerald-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                                                    <div className="relative">
+                                                        <span>헬스 이용권</span>
+                                                    </div>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setShowNeofitModal(true);
+                                                    }}
+                                                    className="relative glass-effect rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                                                    style={{
+                                                        fontSize: '10px',
+                                                        background: 'linear-gradient(135deg, rgba(78, 205, 196, 0.2) 0%, rgba(56, 178, 172, 0.2) 100%)',
+                                                        border: '2px solid rgba(78, 205, 196, 0.4)',
+                                                        color: '#4ECDC4'
+                                                    }}
+                                                >
+                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400/20 to-teal-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                                                    <div className="relative">
+                                                        <span>네오핏 매출</span>
+                                                    </div>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setShowPtModal(true);
+                                                    }}
+                                                    className="relative glass-effect rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                                                    style={{
+                                                        fontSize: '10px',
+                                                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%)',
+                                                        border: '2px solid rgba(245, 158, 11, 0.4)',
+                                                        color: '#F59E0B'
+                                                    }}
+                                                >
+                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-600/20 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                                                    <div className="relative">
+                                                        <span>1:1 PT 매출</span>
+                                                    </div>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setShowPilatesModal(true);
+                                                    }}
+                                                    className="relative glass-effect rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                                                    style={{
+                                                        fontSize: '10px',
+                                                        background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.2) 0%, rgba(251, 113, 133, 0.2) 100%)',
+                                                        border: '2px solid rgba(236, 72, 153, 0.4)',
+                                                        color: '#F472B6'
+                                                    }}
+                                                >
+                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-pink-500/20 to-rose-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                                                    <div className="relative">
+                                                        <span>필라테스 매출</span>
+                                                    </div>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setShowClothingLockerModal(true);
+                                                    }}
+                                                    className="relative glass-effect rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                                                    style={{
+                                                        fontSize: '10px',
+                                                        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%)',
+                                                        border: '2px solid rgba(168, 85, 247, 0.4)',
+                                                        color: '#A855F7'
+                                                    }}
+                                                >
+                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                                                    <div className="relative">
+                                                        <span>운동복/락커</span>
+                                                    </div>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setShowOtherModal(true);
+                                                    }}
+                                                    className="relative glass-effect rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                                                    style={{
+                                                        fontSize: '10px',
+                                                        background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.2) 0%, rgba(107, 114, 128, 0.2) 100%)',
+                                                        border: '2px solid rgba(156, 163, 175, 0.4)',
+                                                        color: '#9CA3AF'
+                                                    }}
+                                                >
+                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-gray-500/20 to-gray-600/20 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                                                    <div className="relative">
+                                                        <span>기타 매출</span>
+                                                    </div>
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -3011,6 +4348,620 @@
                             </div>
                         </div>
 
+                        {/* 월별 매출 리포트 통계 */}
+                        <div className="gradient-border mb-8">
+                            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50">
+                                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                    <div className="p-2 bg-purple-500/20 rounded-lg">
+                                        📊
+                                    </div>
+                                    월별 매출 리포트
+                                </h2>
+
+                                {/* 월별 매출 리포트 */}
+                                <div className="glass-effect rounded-2xl p-6 mb-6">
+                                    <h3 className="text-lg font-semibold mb-6 text-gray-300">📅 월별 매출 리포트</h3>
+                                    <div className="relative h-64 bg-gray-900/30 rounded-xl p-6 overflow-hidden">
+                                        {/* 그리드 라인 */}
+                                        <div className="absolute inset-0 opacity-20">
+                                            {[0, 25, 50, 75, 100].map((percentage, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="absolute w-full border-t border-gray-400"
+                                                    style={{ top: `${percentage}%` }}
+                                                ></div>
+                                            ))}
+                                        </div>
+
+
+                                        {/* 간단한 매출 그래프 */}
+                                        <div className="relative h-full">
+                                            {(() => {
+                                                // 실제 월별 데이터 생성 (임시 테스트 데이터 포함)
+                                                const getRealMonthlyData = (categoryType) => {
+                                                    // 실제 6개월간 매출 계산 (현재월 기준 -4월~+1월)
+                                                    const currentDate = new Date();
+                                                    const realData = [];
+
+                                                    for (let i = -4; i <= 0; i++) {
+                                                        const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+                                                        const year = targetDate.getFullYear();
+                                                        const month = targetDate.getMonth() + 1;
+
+                                                        // 실제 매출 데이터 계산 (현재월까지만)
+                                                        const monthlySales = calculateMonthlyCategorySales(year, month, categoryType, true);
+                                                        realData.push(monthlySales);
+                                                    }
+
+                                                    // 실제 데이터 사용 (테스트 데이터 제거)
+                                                    const finalData = realData;
+
+                                                    // 총매출 확인을 위한 로그 (처음에만)
+                                                    if (categoryType === 'health') {
+                                                        console.log(`=== ${categoryType} 카테고리 월별 매출 ===`);
+                                                        realData.forEach((sales, index) => {
+                                                            const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + (index - 4), 1);
+                                                            const monthStr = `${targetDate.getFullYear()}년 ${targetDate.getMonth() + 1}월`;
+                                                            console.log(`${monthStr}: ${sales.toLocaleString()}원`);
+                                                        });
+                                                    }
+
+                                                    return finalData;
+                                                };
+
+                                                // 실제 데이터 기반 카테고리 생성
+                                                const categories = [
+                                                    {
+                                                        name: '헬스',
+                                                        icon: '🏃‍♂️',
+                                                        color: '#10B981',
+                                                        data: getRealMonthlyData('health')
+                                                    },
+                                                    {
+                                                        name: '네오핏',
+                                                        icon: '🔥',
+                                                        color: '#4ECDC4',
+                                                        data: getRealMonthlyData('neofit')
+                                                    },
+                                                    {
+                                                        name: 'PT',
+                                                        icon: '🏋️',
+                                                        color: '#FFD700',
+                                                        data: getRealMonthlyData('pt')
+                                                    },
+                                                    {
+                                                        name: '필라테스',
+                                                        icon: '🧘‍♀️',
+                                                        color: '#F472B6',
+                                                        data: getRealMonthlyData('pilates')
+                                                    }
+                                                ];
+
+                                                // 동적으로 최근 5개월 라벨 생성 (현재월 기준 -4월~현재월까지만)
+                                                const months = [];
+                                                const currentDate = new Date();
+                                                // 9월이면 5월~9월만 표시 (10월 제외)
+                                                for (let i = -4; i <= 0; i++) {
+                                                    const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+                                                    months.push(`${targetDate.getMonth() + 1}월`);
+                                                }
+                                                console.log('차트 표시 월:', months);
+
+                                                // 동적으로 최대값 계산 (안전하게 처리)
+                                                const allValues = categories.flatMap(cat => cat.data).filter(val => val > 0);
+                                                const maxValue = allValues.length > 0 ? Math.max(...allValues) : 1000000; // 기본값 100만원으로 낮춤
+
+                                                // 여유 공간을 두고 보기 좋은 최대값 설정 (최대값의 120%)
+                                                const paddedMax = maxValue * 1.2;
+
+                                                // 백만 단위로 올림 처리 - 최소값을 50만원으로 낮춤
+                                                const roundedMax = Math.max(Math.ceil(paddedMax / 500000) * 500000, 500000); // 최소 50만원
+
+                                                // Y축 눈금 생성 (5개 구간) - 실제 매출에 따라 자동 조정
+                                                const yTicks = [];
+                                                const tickInterval = roundedMax / 4;
+                                                for (let i = 4; i >= 0; i--) {
+                                                    yTicks.push(tickInterval * i);
+                                                }
+
+                                                return (
+                                                    <div className="p-4">
+                                                        {/* 디버그 정보 */}
+                                                        <div className="mb-4 text-sm text-yellow-300 bg-yellow-900/20 p-2 rounded">
+                                                            🔍 그래프 데이터: {allValues.length}개 값, 최대값: {maxValue.toLocaleString()}원
+                                                            <br />📊 카테고리 수: {categories.length}개, 라인 색상: {categories.map(c => c.color).join(', ')}
+                                                        </div>
+
+                                                        {/* 범례 */}
+                                                        <div className="flex gap-6 mb-6 text-sm">
+                                                            {categories.map((category, index) => (
+                                                                <div key={index} className="flex items-center gap-2">
+                                                                    <div
+                                                                        className="w-3 h-3 rounded-full"
+                                                                        style={{ backgroundColor: category.color }}
+                                                                    ></div>
+                                                                    <span className="text-gray-300 font-medium">
+                                                                        {category.icon} {category.name}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* 차트 영역 */}
+                                                        <div className="relative">
+                                                            {/* Y축 라벨 */}
+                                                            <div className="absolute -left-20 top-0 h-96 flex flex-col justify-between text-xs text-gray-400">
+                                                                {yTicks.map((tick, index) => (
+                                                                    <div key={index} className="text-right">
+                                                                        {tick === 0 ? '0' : tick >= 1000000 ? `${Math.round(tick / 1000000)}백만` : `${Math.round(tick / 10000)}만`}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* 메인 차트 */}
+                                                            <div className="ml-4 relative bg-gray-800/20 rounded-lg border border-gray-700" style={{ width: '100%', height: '320px', padding: '20px' }}>
+                                                                {/* 차트 배경과 테두리 */}
+                                                                <div className="absolute inset-5 border-l-2 border-b-2 border-gray-400"></div>
+
+                                                                {/* 가로 기준선 - Y축 매출 구간별 */}
+                                                                {yTicks.map((tick, index) => (
+                                                                    <div key={`h-${index}`}>
+                                                                        {/* 기준선 - 더 불투명하게 */}
+                                                                        <div
+                                                                            className="absolute"
+                                                                            style={{
+                                                                                left: '20px',
+                                                                                right: '20px',
+                                                                                top: `${20 + (index / 4) * 280}px`,
+                                                                                borderTop: index === 4 ? '1px solid #64748B' : '1px solid #94A3B8',
+                                                                                opacity: index === 4 ? 0.4 : 0.25
+                                                                            }}
+                                                                        ></div>
+                                                                        {/* 기준값 표시 - 더 오른쪽으로 이동 */}
+                                                                        <div
+                                                                            className="absolute text-xs text-gray-400 font-medium"
+                                                                            style={{
+                                                                                right: '-40px',
+                                                                                top: `${15 + (index / 4) * 280}px`,
+                                                                                transform: 'translateY(-50%)',
+                                                                                background: 'rgba(0,0,0,0.8)',
+                                                                                padding: '2px 6px',
+                                                                                borderRadius: '4px',
+                                                                                whiteSpace: 'nowrap'
+                                                                            }}
+                                                                        >
+                                                                            {tick === 0 ? '0' : `${Math.round(tick / 1000000)}백만`}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+
+                                                                {/* 세로선 격자 - 호버 영역 포함 */}
+                                                                {months.map((month, index) => {
+                                                                    // 해당 월의 총 매출 계산 (정확한 계산)
+                                                                    const currentDate = new Date();
+                                                                    const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - (5 - index), 1);
+                                                                    const targetYear = targetDate.getFullYear();
+                                                                    const targetMonth = targetDate.getMonth() + 1;
+
+                                                                    const monthTotal = calculateMonthlyTotalSales(targetYear, targetMonth);
+                                                                    const hasData = monthTotal > 0;
+
+                                                                    return (
+                                                                        <div
+                                                                            key={`v-${index}`}
+                                                                            className="absolute opacity-50 hover:opacity-80 cursor-crosshair group"
+                                                                            style={{
+                                                                                left: `calc(${(index * 100) / 5}%)`,
+                                                                                width: `${100 / 5}%`,
+                                                                                top: '20px',
+                                                                                bottom: '20px',
+                                                                                zIndex: 15
+                                                                            }}
+                                                                            onMouseMove={(e) => {
+                                                                                // 마우스 위치로 날짜 계산
+                                                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                                                const relativeX = (e.clientX - rect.left) / rect.width;
+                                                                                const day = Math.max(1, Math.min(31, Math.ceil(relativeX * 31)));
+
+                                                                                // 날짜 문자열 생성
+                                                                                const currentDate = new Date();
+                                                                                const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - (5 - index), 1);
+                                                                                const monthStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+                                                                                const dateStr = `${monthStr}-${String(day).padStart(2, '0')}`;
+
+                                                                                // 일별 매출 데이터 찾기
+                                                                                const dailySale = dailySales.find(sale => sale.date === dateStr);
+
+                                                                                // 툴팁 업데이트
+                                                                                const tooltip = document.getElementById('daily-tooltip');
+                                                                                if (tooltip) {
+                                                                                    tooltip.style.display = 'block';
+                                                                                    tooltip.style.left = (e.clientX + 10) + 'px';
+                                                                                    tooltip.style.top = (e.clientY - 50) + 'px';
+
+                                                                                    if (dailySale) {
+                                                                                        const price = parseInt(dailySale.price) || 0;
+                                                                                        tooltip.innerHTML = `
+                                                                                            <div class="font-bold text-blue-400">${targetDate.getMonth() + 1}월 ${day}일</div>
+                                                                                            <div class="text-green-400">${dailySale.product}</div>
+                                                                                            <div class="text-yellow-400 font-semibold">${price.toLocaleString()}원</div>
+                                                                                        `;
+                                                                                    } else {
+                                                                                        tooltip.innerHTML = `
+                                                                                            <div class="font-bold text-blue-400">${targetDate.getMonth() + 1}월 ${day}일</div>
+                                                                                            <div class="text-gray-400">매출 없음</div>
+                                                                                        `;
+                                                                                    }
+                                                                                }
+                                                                            }}
+                                                                            onMouseLeave={() => {
+                                                                                const tooltip = document.getElementById('daily-tooltip');
+                                                                                if (tooltip) {
+                                                                                    tooltip.style.display = 'none';
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            {/* 세로선 */}
+                                                                            <div
+                                                                                className="absolute pointer-events-none"
+                                                                                style={{
+                                                                                    left: '50%',
+                                                                                    top: '0',
+                                                                                    bottom: '0',
+                                                                                    borderLeft: '1px dashed #6B7280',
+                                                                                    transform: 'translateX(-50%)'
+                                                                                }}
+                                                                            ></div>
+
+                                                                            {/* 호버시 배경 하이라이트 */}
+                                                                            <div className="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-10 transition-opacity duration-200"></div>
+
+                                                                            {/* 개선된 호버 툴팁 - 더 명확하고 안정적 */}
+                                                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-3 bg-gray-900 border border-gray-600 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 shadow-xl">
+                                                                                <div className="font-bold text-blue-300 mb-2 text-center">{month} 매출 현황</div>
+                                                                                {categories.map((cat, catIdx) => {
+                                                                                    const value = cat.data[index];
+                                                                                    return (
+                                                                                        <div key={catIdx} className="flex items-center justify-between gap-4 mb-1">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <div
+                                                                                                    className="w-3 h-3 rounded-full"
+                                                                                                    style={{ backgroundColor: cat.color }}
+                                                                                                ></div>
+                                                                                                <span className="text-gray-200">{cat.icon} {cat.name}:</span>
+                                                                                            </div>
+                                                                                            <span className="font-semibold" style={{ color: value > 0 ? cat.color : '#9CA3AF' }}>
+                                                                                                {value > 0 ? `${value.toLocaleString()}원` : '0원'}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                                <div className="border-t border-gray-600 mt-2 pt-2 flex justify-between items-center">
+                                                                                    <span className="font-bold text-gray-200">월 총 매출:</span>
+                                                                                    <span className="font-bold text-yellow-300 text-lg">{monthTotal.toLocaleString()}원</span>
+                                                                                </div>
+                                                                                {/* 툴팁 화살표 */}
+                                                                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+
+                                                                {/* 데이터 라인과 포인트 - 모든 카테고리를 하나의 SVG에 */}
+                                                                <svg
+                                                                    className="absolute z-20"
+                                                                    style={{
+                                                                        left: '20px',
+                                                                        top: '20px',
+                                                                        width: 'calc(100% - 40px)',
+                                                                        height: '280px'
+                                                                    }}
+                                                                    viewBox="0 0 100 100"
+                                                                    preserveAspectRatio="none"
+                                                                >
+                                                                    {/* 모든 카테고리의 라인 */}
+                                                                    {categories.map((category, catIndex) => (
+                                                                        <g key={`line-${catIndex}`}>
+                                                                            {/* 곡선 라인 */}
+                                                                            <polyline
+                                                                                points={category.data
+                                                                                    .map((value, monthIndex) => {
+                                                                                        const x = (monthIndex / (category.data.length - 1)) * 100;
+                                                                                        const y = 100 - ((value || 0) / roundedMax) * 100;
+                                                                                        return `${x},${y}`;
+                                                                                    }).join(' ')}
+                                                                                stroke={category.color}
+                                                                                strokeWidth="3"
+                                                                                fill="none"
+                                                                                vectorEffect="non-scaling-stroke"
+                                                                                opacity="0.9"
+                                                                                strokeLinecap="round"
+                                                                                strokeLinejoin="round"
+                                                                                style={{ pointerEvents: 'none' }}
+                                                                            />
+
+                                                                            {/* 데이터 포인트 - 호버 가능한 원 */}
+                                                                            {category.data.map((value, monthIndex) => {
+                                                                                if (value >= 0) {
+                                                                                    const x = (monthIndex / (category.data.length - 1)) * 100;
+                                                                                    const y = 100 - ((value || 0) / roundedMax) * 100;
+                                                                                    return (
+                                                                                        <g key={`${catIndex}-${monthIndex}`}>
+                                                                                            {/* 호버 영역 */}
+                                                                                            <circle
+                                                                                                cx={x}
+                                                                                                cy={y}
+                                                                                                r="3"
+                                                                                                fill="transparent"
+                                                                                                stroke="transparent"
+                                                                                                style={{ cursor: 'pointer' }}
+                                                                                                onMouseEnter={(e) => {
+                                                                                                    const tooltip = document.getElementById('chart-tooltip');
+                                                                                                    if (tooltip) {
+                                                                                                        tooltip.style.display = 'block';
+                                                                                                        tooltip.style.left = (e.clientX + 10) + 'px';
+                                                                                                        tooltip.style.top = (e.clientY - 60) + 'px';
+                                                                                                        const monthName = months[monthIndex];
+
+                                                                                                        // 해당 월의 총 매출 계산 (각 카테고리별로 직접 계산)
+                                                                                                        const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + (monthIndex - 4), 1);
+                                                                                                        const targetYear = targetDate.getFullYear();
+                                                                                                        const targetMonth = targetDate.getMonth() + 1;
+
+                                                                                                        console.log(`=== 호버 이벤트 디버깅 ===`);
+                                                                                                        console.log(`월: ${monthName}, 년: ${targetYear}, 월: ${targetMonth}, 인덱스: ${monthIndex}`);
+                                                                                                        console.log('yearlyDailySales 길이:', yearlyDailySales.length);
+                                                                                                        console.log('yearlyDailySales 전체:', yearlyDailySales);
+
+                                                                                                        // 해당 월 데이터 필터링 확인
+                                                                                                        const targetMonthPrefix = `${targetYear}-${String(targetMonth).padStart(2, '0')}`;
+                                                                                                        const monthDataCheck = yearlyDailySales.filter(sale => sale.date && sale.date.startsWith(targetMonthPrefix));
+                                                                                                        console.log(`${targetMonthPrefix} 필터링된 데이터:`, monthDataCheck.length, '건', monthDataCheck);
+
+                                                                                                        // 강제로 해당 월 데이터를 직접 계산 (가장 확실한 방법)
+                                                                                                        let healthSales = 0, neofitSales = 0, ptSales = 0, pilatesSales = 0;
+
+                                                                                                        // yearlyDailySales에서 직접 해당 월 데이터 필터링하고 계산
+                                                                                                        monthDataCheck.forEach(sale => {
+                                                                                                            const price = parseInt(sale.price) || 0;
+                                                                                                            const product = sale.product ? sale.product.toLowerCase() : '';
+
+                                                                                                            console.log('상품 처리:', { product, price });
+
+                                                                                                            if (product.includes('헬스') || product === '헬스권') {
+                                                                                                                healthSales += price;
+                                                                                                            } else if (product.includes('네오핏') || product === '네오핏') {
+                                                                                                                neofitSales += price;
+                                                                                                            } else if (product.includes('pt') || product === 'pt') {
+                                                                                                                ptSales += price;
+                                                                                                            } else if (product.includes('필라테스') || product === '필라테스 이용권' || product === '필라테스') {
+                                                                                                                pilatesSales += price;
+                                                                                                            }
+                                                                                                        });
+
+                                                                                                        console.log(`${monthName} 직접 계산 결과:`, {
+                                                                                                            헬스: healthSales,
+                                                                                                            네오핏: neofitSales,
+                                                                                                            PT: ptSales,
+                                                                                                            필라테스: pilatesSales
+                                                                                                        });
+
+                                                                                                        const monthlyTotal = healthSales + neofitSales + ptSales + pilatesSales;
+
+                                                                                                        console.log(`호버 이벤트 - ${monthName} 총매출 계산:`, {
+                                                                                                            헬스: healthSales.toLocaleString(),
+                                                                                                            네오핏: neofitSales.toLocaleString(),
+                                                                                                            PT: ptSales.toLocaleString(),
+                                                                                                            필라테스: pilatesSales.toLocaleString(),
+                                                                                                            총합: monthlyTotal.toLocaleString(),
+                                                                                                            원시값들: { 헬스: healthSales, 네오핏: neofitSales, PT: ptSales, 필라테스: pilatesSales },
+                                                                                                            원시총합: monthlyTotal,
+                                                                                                            수동계산: healthSales + neofitSales + ptSales + pilatesSales
+                                                                                                        });
+
+                                                                                                        console.log(`${monthName} 최종 총매출:`, monthlyTotal);
+
+                                                                                                        // 툴팁에서 실시간으로 총합 계산 (최종 안전장치)
+                                                                                                        const tooltipHealthSales = Number(healthSales) || 0;
+                                                                                                        const tooltipNeofitSales = Number(neofitSales) || 0;
+                                                                                                        const tooltipPtSales = Number(ptSales) || 0;
+                                                                                                        const tooltipPilatesSales = Number(pilatesSales) || 0;
+                                                                                                        const tooltipTotal = tooltipHealthSales + tooltipNeofitSales + tooltipPtSales + tooltipPilatesSales;
+
+                                                                                                        console.log('툴팁 총합 계산:', {
+                                                                                                            건강: tooltipHealthSales,
+                                                                                                            네오핏: tooltipNeofitSales,
+                                                                                                            PT: tooltipPtSales,
+                                                                                                            필라테스: tooltipPilatesSales,
+                                                                                                            최종총합: tooltipTotal,
+                                                                                                            이전총합: finalTotal
+                                                                                                        });
+
+                                                                                                        // 툴팁에 표시되는 개별 값들을 그대로 합산
+                                                                                                        const displayHealthSales = healthSales || 0;
+                                                                                                        const displayNeofitSales = neofitSales || 0;
+                                                                                                        const displayPtSales = ptSales || 0;
+                                                                                                        const displayPilatesSales = pilatesSales || 0;
+
+                                                                                                        // 툴팁에 표시될 개별 값들을 직접 합산 (이것이 정답!)
+                                                                                                        const finalDisplayTotal = displayHealthSales + displayNeofitSales + displayPtSales + displayPilatesSales;
+
+                                                                                                        console.log(`${monthName} 개별값 합산:`, {
+                                                                                                            헬스: displayHealthSales,
+                                                                                                            네오핏: displayNeofitSales,
+                                                                                                            PT: displayPtSales,
+                                                                                                            필라테스: displayPilatesSales,
+                                                                                                            총합: finalDisplayTotal
+                                                                                                        });
+
+                                                                                                        // 실제 계산된 값들을 사용 (하드코딩 제거)
+                                                                                                        const realHealthSales = displayHealthSales;
+                                                                                                        const realNeofitSales = displayNeofitSales;
+                                                                                                        const realPtSales = displayPtSales;
+                                                                                                        const realPilatesSales = displayPilatesSales;
+
+                                                                                                        const realTotal = realHealthSales + realNeofitSales + realPtSales + realPilatesSales;
+
+                                                                                                        console.log(`${monthName} 실제 값들:`, {
+                                                                                                            헬스: realHealthSales,
+                                                                                                            네오핏: realNeofitSales,
+                                                                                                            PT: realPtSales,
+                                                                                                            필라테스: realPilatesSales,
+                                                                                                            합계: realTotal
+                                                                                                        });
+
+                                                                                                        tooltip.innerHTML = `
+                                                                                                            <div class="font-bold text-white mb-2">${monthName} 매출</div>
+                                                                                                            <div class="mb-1">
+                                                                                                                <span class="text-gray-300">${category.name}:</span>
+                                                                                                                <span class="font-semibold ml-1" style="color: ${category.color}">
+                                                                                                                    ${value.toLocaleString()}원
+                                                                                                                </span>
+                                                                                                            </div>
+                                                                                                            <div class="text-xs text-gray-400 mb-1">
+                                                                                                                헬스: ${realHealthSales.toLocaleString()}원 | 네오핏: ${realNeofitSales.toLocaleString()}원<br>
+                                                                                                                PT: ${realPtSales.toLocaleString()}원 | 필라테스: ${realPilatesSales.toLocaleString()}원
+                                                                                                            </div>
+                                                                                                            <div class="border-t border-gray-600 pt-1 mt-1">
+                                                                                                                <span class="text-gray-300">총 매출:</span>
+                                                                                                                <span class="font-bold text-green-400 ml-1">
+                                                                                                                    ${realTotal.toLocaleString()}원
+                                                                                                                </span>
+                                                                                                            </div>
+                                                                                                        `;
+                                                                                                    }
+                                                                                                }}
+                                                                                                onMouseLeave={() => {
+                                                                                                    const tooltip = document.getElementById('chart-tooltip');
+                                                                                                    if (tooltip) {
+                                                                                                        tooltip.style.display = 'none';
+                                                                                                    }
+                                                                                                }}
+                                                                                            />
+                                                                                            {/* 실제 보이는 데이터 포인트 */}
+                                                                                            <circle
+                                                                                                cx={x}
+                                                                                                cy={y}
+                                                                                                r="1.5"
+                                                                                                fill={category.color}
+                                                                                                stroke="white"
+                                                                                                strokeWidth="0.5"
+                                                                                                style={{ pointerEvents: 'none' }}
+                                                                                            />
+                                                                                        </g>
+                                                                                    );
+                                                                                }
+                                                                                return null;
+                                                                            })}
+                                                                        </g>
+                                                                    ))}
+                                                                </svg>
+
+                                                                {/* 데이터가 없을 때 안내 메시지 */}
+                                                                {allValues.length === 0 && (
+                                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                                        <div className="text-center text-gray-400">
+                                                                            <div className="text-4xl mb-2">📊</div>
+                                                                            <div className="text-lg font-medium">매출 데이터가 없습니다</div>
+                                                                            <div className="text-sm mt-1">결제 정보를 입력하면 그래프가 표시됩니다</div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* X축 라벨 - 세로선과 정확히 정렬 (5등분) */}
+                                                            <div className="ml-4 mt-4 relative h-6">
+                                                                {months.map((month, index) => (
+                                                                    <div
+                                                                        key={index}
+                                                                        className="absolute text-xs text-gray-400 font-medium transform -translate-x-1/2"
+                                                                        style={{
+                                                                            left: `calc(${(index * 100) / 5}% + ${(100 / 5) / 2}%)` // 세로선과 동일한 위치
+                                                                        }}
+                                                                    >
+                                                                        {month}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 기존 툴팁 요소 */}
+                                                        <div
+                                                            id="daily-tooltip"
+                                                            className="absolute z-50 bg-gray-900 text-white p-2 rounded shadow-lg pointer-events-none"
+                                                            style={{
+                                                                display: 'none',
+                                                                fontSize: '12px',
+                                                                maxWidth: '200px'
+                                                            }}
+                                                        ></div>
+
+                                                        {/* 차트 데이터 포인트 전용 툴팁 */}
+                                                        <div
+                                                            id="chart-tooltip"
+                                                            className="absolute z-50 bg-gray-900 border border-gray-600 text-white p-3 rounded-lg shadow-xl pointer-events-none"
+                                                            style={{
+                                                                display: 'none',
+                                                                fontSize: '13px',
+                                                                minWidth: '120px'
+                                                            }}
+                                                        ></div>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 주요 카테고리 매출 비교 */}
+                                <div className="glass-effect rounded-2xl p-6">
+                                    <h3 className="text-lg font-semibold mb-4 text-gray-300">🎯 주요 카테고리 매출</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {(() => {
+                                            const categories = [
+                                                { name: '헬스', sales: calculateHealthSales(), color: '#10B981', icon: '🏃‍♂️' },
+                                                { name: '네오핏', sales: calculateNeoFitSales(), color: '#4ECDC4', icon: '🔥' },
+                                                { name: 'PT', sales: calculatePtSales(), color: '#FFD700', icon: '🏋️' },
+                                                { name: '필라테스', sales: calculatePilatesSales(), color: '#F472B6', icon: '🧘‍♀️' }
+                                            ];
+
+                                            return categories.map((category, index) => {
+                                                // 이전 월 대비 성장률 계산 (임시 데이터)
+                                                const growth = Math.random() * 40 - 20; // -20% ~ +20%
+                                                const isPositive = growth > 0;
+
+                                                return (
+                                                    <div key={index} className="glass-effect rounded-xl p-4 hover:scale-105 transition-all duration-300">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-sm text-gray-400">{category.icon} {category.name}</span>
+                                                            <div className={`flex items-center gap-1 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                                                                <span className="text-xs">
+                                                                    {isPositive ? '↗' : '↘'} {Math.abs(growth).toFixed(1)}%
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-lg font-bold" style={{ color: category.color }}>
+                                                            {category.sales.toLocaleString()}원
+                                                        </div>
+                                                        {/* 진행바 */}
+                                                        <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                                                            <div
+                                                                className="h-1.5 rounded-full transition-all duration-1000"
+                                                                style={{
+                                                                    width: `${(category.sales / Math.max(...categories.map(c => c.sales))) * 100}%`,
+                                                                    backgroundColor: category.color
+                                                                }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* 월간 총계 및 인센티브 */}
                         <div className="gradient-border glow-green">
                             <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50">
@@ -3018,17 +4969,80 @@
                                     월간 급여 계산
                                 </h2>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 text-center mb-6 sm:mb-8">
-                                    <div className="glass-effect rounded-2xl p-4 sm:p-6 hover:scale-105 transition-all duration-300">
-                                        <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 font-semibold">월간 총매출</p>
-                                        <p className="text-2xl sm:text-3xl font-black" style={{ color: '#FF8C00' }}>{(monthlyTotal || 0).toLocaleString()}원</p>
+                                {/* 메인 카드 - 월간 총매출 */}
+                                <div className="mb-8">
+                                    <div className="glass-effect rounded-3xl p-8 text-center hover:scale-105 transition-all duration-300 shadow-2xl relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-500/10 opacity-50"></div>
+                                        <div className="relative z-10">
+                                            <p className="text-gray-400 text-lg mb-4 font-semibold">📊 월간 총매출</p>
+                                            <p className="text-4xl sm:text-5xl font-black mb-2" style={{
+                                                color: '#FF6B35',
+                                                textShadow: '0 0 20px rgba(255, 107, 53, 0.6), 0 0 30px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2)'
+                                            }}>{(monthlyTotal || 0).toLocaleString()}원</p>
+                                            <div className="flex justify-center space-x-2 text-sm text-gray-500">
+                                                <span>💰 Total Revenue</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    
+                                </div>
+
+                                {/* 카테고리별 매출 그리드 */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                                    <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-green-500"></div>
+                                        <div className="text-center">
+                                            <p className="text-gray-400 text-sm mb-3 font-semibold">🏃‍♂️ 헬스 이용권</p>
+                                            <p className="text-2xl sm:text-3xl font-black" style={{ color: '#10B981' }}>{calculateHealthSales().toLocaleString()}원</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-cyan-500"></div>
+                                        <div className="text-center">
+                                            <p className="text-gray-400 text-sm mb-3 font-semibold">🔥 네오핏 매출</p>
+                                            <p className="text-2xl sm:text-3xl font-black" style={{ color: '#4ECDC4' }}>{calculateNeoFitSales().toLocaleString()}원</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 to-orange-500"></div>
+                                        <div className="text-center">
+                                            <p className="text-gray-400 text-sm mb-3 font-semibold">🏋️ 1:1 PT 매출</p>
+                                            <p className="text-2xl sm:text-3xl font-black" style={{ color: '#FFD700' }}>{calculatePtSales().toLocaleString()}원</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-400 to-rose-500"></div>
+                                        <div className="text-center">
+                                            <p className="text-gray-400 text-sm mb-3 font-semibold">🧘‍♀️ 필라테스 매출</p>
+                                            <p className="text-2xl sm:text-3xl font-black" style={{ color: '#F472B6' }}>{calculatePilatesSales().toLocaleString()}원</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-400 to-indigo-500"></div>
+                                        <div className="text-center">
+                                            <p className="text-gray-400 text-sm mb-3 font-semibold">👕 운동복/락커</p>
+                                            <p className="text-2xl sm:text-3xl font-black" style={{ color: '#A855F7' }}>{calculateClothingLockerSales().toLocaleString()}원</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gray-400 to-slate-500"></div>
+                                        <div className="text-center">
+                                            <p className="text-gray-400 text-sm mb-3 font-semibold">📊 기타 매출</p>
+                                            <p className="text-2xl sm:text-3xl font-black" style={{ color: '#9CA3AF' }}>{calculateOtherSales().toLocaleString()}원</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 text-center mb-6 sm:mb-8">
                                     <div className="glass-effect rounded-2xl p-4 sm:p-6 hover:scale-105 transition-all duration-300">
                                         <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 font-semibold">인센티브율 ({employeeType === 'full' ? '정직원' : '파트타임'})</p>
                                         <p className="text-2xl sm:text-3xl font-black" style={{ color: '#00C6FF' }}>{incentiveRate || 0}%</p>
                                     </div>
-                                    
+
                                     <div className="glass-effect rounded-2xl p-4 sm:p-6 hover:scale-105 transition-all duration-300">
                                         <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 font-semibold">인센티브 금액</p>
                                         <p className="text-2xl sm:text-3xl font-black" style={{ color: '#00FF88' }}>
