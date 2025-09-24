@@ -886,6 +886,11 @@
                                         const total = visibleTotalsPerMonth[context.dataIndex] || 0;
                                         const share = total ? ` · ${(value / total * 100).toFixed(1)}%` : '';
                                         return `${context.dataset.label}: ${value.toLocaleString()}원${share}`;
+                                    },
+                                    labelTextColor: (context) => {
+                                        const datasetLabel = context.dataset?.label || '';
+                                        const matched = CHART_CATEGORY_META.find(meta => `${meta.icon} ${meta.label}` === datasetLabel);
+                                        return matched ? matched.color : '#E5E7EB';
                                     }
                                 }
                             }
