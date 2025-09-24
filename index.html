@@ -3053,8 +3053,7 @@
                     discounts: {},
                     manualPriceEdit: false
                 });
-                const [hiddenDiscountPanels, setHiddenDiscountPanels] = useState({});
-                
+
                 const selectedLineItems = React.useMemo(() => {
                     const discounts = modalData.discounts || {};
                     const items = [];
@@ -3155,30 +3154,6 @@
 
                     return items;
                 }, [modalData.healthProduct, modalData.ptProduct, modalData.pilatesProduct, modalData.neofitProduct, modalData.lockerType, modalData.lockerPeriod, modalData.discounts]);
-
-                React.useEffect(() => {
-                    if (selectedLineItems.length === 0) {
-                        setHiddenDiscountPanels({});
-                        return;
-                    }
-
-                    const activeKeys = new Set(selectedLineItems.map(item => item.key));
-                    setHiddenDiscountPanels(prev => {
-                        const next = {};
-                        activeKeys.forEach(key => {
-                            if (prev[key]) {
-                                next[key] = true;
-                            }
-                        });
-
-                        const prevKeys = Object.keys(prev);
-                        const nextKeys = Object.keys(next);
-                        if (prevKeys.length === nextKeys.length && prevKeys.every(key => prev[key] === next[key])) {
-                            return prev;
-                        }
-                        return next;
-                    });
-                }, [selectedLineItems]);
 
                 const lineItemTotals = React.useMemo(() => {
                     const originalSum = selectedLineItems.reduce((sum, item) => sum + (item.originalPrice || 0), 0);
@@ -3587,46 +3562,6 @@
                                                 const palette = DISCOUNT_PALETTE[item.key] || DISCOUNT_PALETTE[item.categoryKey] || DISCOUNT_PALETTE.default;
                                                 const discountPresets = [5, 10, 15, 20, 25];
                                                 const activeDiscountAmount = normalizeAmount(modalData.discounts?.[item.key] || 0);
-                                                const isHidden = !!hiddenDiscountPanels[item.key];
-
-                                                if (isHidden) {
-                                                    return (
-                                                        <div
-                                                            key={`${item.key}-hidden`}
-                                                            className="rounded-xl px-4 py-3 flex items-center justify-between"
-                                                            style={{
-                                                                background: palette.cardBg,
-                                                                border: `1px solid ${palette.cardBorder}`,
-                                                                boxShadow: palette.cardShadow
-                                                            }}
-                                                        >
-                                                            <div>
-                                                                <p className="font-semibold text-sm" style={{ color: palette.accent }}>{item.displayName}</p>
-                                                                <p className="text-xs" style={{ color: 'rgba(226,232,240,0.65)' }}>
-                                                                    할인 입력이 숨겨졌습니다.
-                                                                </p>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setHiddenDiscountPanels(prev => {
-                                                                    const next = { ...prev };
-                                                                    delete next[item.key];
-                                                                    return next;
-                                                                })}
-                                                                className="px-3 py-1 text-[11px] rounded-lg border transition-colors"
-                                                                style={{
-                                                                    background: 'rgba(15,23,42,0.45)',
-                                                                    borderColor: palette.inputBorder,
-                                                                    color: palette.accent,
-                                                                    cursor: 'pointer'
-                                                                }}
-                                                            >
-                                                                다시 열기
-                                                            </button>
-                                                        </div>
-                                                    );
-                                                }
-
                                                 return (
                                                     <div
                                                         key={item.key}
@@ -3639,7 +3574,30 @@
                                                     >
                                                         <button
                                                             type="button"
-                                                            onClick={() => setHiddenDiscountPanels(prev => ({ ...prev, [item.key]: true }))}
+                                                            onClick={() => {
+                                                                setModalData(prev => {
+                                                                    const next = { ...prev };
+                                                                    const updates = {};
+                                                                    if (item.key === 'health') updates.healthProduct = '';
+                                                                    if (item.key === 'pt') updates.ptProduct = '';
+                                                                    if (item.key === 'pilates') updates.pilatesProduct = '';
+                                                                    if (item.key === 'neofit') updates.neofitProduct = '';
+                                                                    if (item.key === 'locker') {
+                                                                        updates.lockerType = '';
+                                                                        updates.lockerPeriod = '';
+                                                                    }
+
+                                                                    const nextDiscounts = { ...(next.discounts || {}) };
+                                                                    delete nextDiscounts[item.key];
+
+                                                                    return {
+                                                                        ...next,
+                                                                        ...updates,
+                                                                        discounts: nextDiscounts,
+                                                                        manualPriceEdit: false
+                                                                    };
+                                                                });
+                                                            }}
                                                             className="absolute w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all"
                                                             style={{
                                                                 bottom: '12px',
@@ -3717,6 +3675,27 @@
                                                                                 </button>
                                                                             );
                                                                         })}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setModalData((prev) => ({
+                                                                                    ...prev,
+                                                                                    discounts: {
+                                                                                        ...(prev.discounts || {}),
+                                                                                        [item.key]: ''
+                                                                                    },
+                                                                                    manualPriceEdit: false
+                                                                                }));
+                                                                            }}
+                                                                            className="px-2 py-1 rounded-full text-[11px] transition-colors"
+                                                                            style={{
+                                                                                background: 'rgba(15,23,42,0.25)',
+                                                                                border: `1px dashed ${palette.inputBorder}`,
+                                                                                color: 'rgba(203,213,225,0.8)'
+                                                                            }}
+                                                                        >
+                                                                            할인 미적용
+                                                                        </button>
                                                                     </div>
                                                                     <p className="text-[10px] mt-1" style={{ color: 'rgba(226,232,240,0.45)' }}>최대 {item.originalPrice.toLocaleString()}원</p>
                                                                 </div>
