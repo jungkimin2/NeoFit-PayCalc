@@ -1085,6 +1085,7 @@
             const [checkedDetails, setCheckedDetails] = useState({});
             const [showAddSaleModal, setShowAddSaleModal] = useState(false);
             const [selectedModalDay, setSelectedModalDay] = useState(null);
+            const [editingDetailContext, setEditingDetailContext] = useState(null);
             const [viewMode, setViewMode] = useState('daily'); // 'daily', 'weekly', 'monthly'
             const dailyViewRef = React.useRef(null);
             const [searchQuery, setSearchQuery] = useState('');
@@ -1907,9 +1908,27 @@
             };
             
             // 매출 입력 모달 열기
-            const openAddSaleModal = (day) => {
+            const openAddSaleModal = (day, detail = null, explicitDateKey = null) => {
                 setSelectedModalDay(day);
+
+                if (detail) {
+                    const resolvedDateKey = explicitDateKey || getDateKey(day);
+                    setEditingDetailContext({
+                        day,
+                        dateKey: resolvedDateKey,
+                        detailId: detail.id,
+                        detail
+                    });
+                } else {
+                    setEditingDetailContext(null);
+                }
+
                 setShowAddSaleModal(true);
+            };
+
+            const closeSaleModal = () => {
+                setShowAddSaleModal(false);
+                setEditingDetailContext(null);
             };
 
             // 매출 상세 내역 추가
@@ -3044,20 +3063,132 @@
             };
             
             // 매출 입력 모달 컴포넌트
+            const createEmptyModalState = () => ({
+                customerName: '',
+                healthProduct: '',
+                ptProduct: '',
+                pilatesProduct: '',
+                neofitProduct: '',
+                lockerProduct: '',
+                lockerType: '',
+                lockerPeriod: '',
+                price: '',
+                discounts: {},
+                manualPriceEdit: false,
+                otherItemName: '',
+                otherItemPrice: ''
+            });
+
+            const deriveModalStateFromDetail = (detail) => {
+                const state = createEmptyModalState();
+
+                if (!detail) {
+                    return state;
+                }
+
+                state.customerName = detail.customerName || '';
+
+                const normalizedPrice = normalizeAmount(detail.price);
+                state.price = normalizedPrice > 0 ? formatNumberWithCommas(normalizedPrice) : '';
+                state.manualPriceEdit = true;
+
+                let recognizedLineItem = false;
+                const discounts = {};
+
+                if (Array.isArray(detail.lineItems) && detail.lineItems.length > 0) {
+                    detail.lineItems.forEach(item => {
+                        if (!item) return;
+
+                        const itemKey = item.key || item.categoryKey;
+                        const productName = item.productName || item.product || '';
+                        const discountAmount = normalizeAmount(item.discountAmount);
+
+                        if (discountAmount > 0 && itemKey) {
+                            discounts[itemKey] = formatNumberWithCommas(discountAmount);
+                        }
+
+                        switch (itemKey) {
+                            case 'health':
+                                if (productPrices[productName] !== undefined) {
+                                    state.healthProduct = productName;
+                                    recognizedLineItem = true;
+                                }
+                                break;
+                            case 'pt':
+                                if (productPrices[productName] !== undefined) {
+                                    state.ptProduct = productName;
+                                    recognizedLineItem = true;
+                                }
+                                break;
+                            case 'pilates':
+                                if (productPrices[productName] !== undefined) {
+                                    state.pilatesProduct = productName;
+                                    recognizedLineItem = true;
+                                }
+                                break;
+                            case 'neofit':
+                                if (productPrices[productName] !== undefined) {
+                                    state.neofitProduct = productName;
+                                    recognizedLineItem = true;
+                                }
+                                break;
+                            case 'locker':
+                            case 'clothing': {
+                                if (productName) {
+                                    const [type, period] = productName.split(' ');
+                                    if (type && period) {
+                                        state.lockerType = type;
+                                        state.lockerPeriod = period;
+                                        recognizedLineItem = true;
+                                    }
+                                }
+                                break;
+                            }
+                            default:
+                                break;
+                        }
+                    });
+
+                    if (recognizedLineItem) {
+                        state.manualPriceEdit = false;
+                        state.price = normalizedPrice > 0 ? formatNumberWithCommas(normalizedPrice) : '';
+                    }
+                }
+
+                if (Object.keys(discounts).length > 0) {
+                    state.discounts = discounts;
+                }
+
+                if (!recognizedLineItem) {
+                    state.manualPriceEdit = true;
+                    state.otherItemName = detail.product || '';
+                    state.otherItemPrice = normalizedPrice > 0 ? formatNumberWithCommas(normalizedPrice) : '';
+                    state.discounts = {};
+                }
+
+                return state;
+            };
+
             const AddSaleModal = () => {
-                const [modalData, setModalData] = useState({
-                    customerName: '',
-                    healthProduct: '',
-                    ptProduct: '',
-                    pilatesProduct: '',
-                    neofitProduct: '',
-                    lockerProduct: '',
-                    lockerType: '',
-                    lockerPeriod: '',
-                    price: '',
-                    discounts: {},
-                    manualPriceEdit: false
-                });
+                const isEditing = Boolean(editingDetailContext);
+
+                const [modalData, setModalData] = useState(() => (
+                    isEditing && editingDetailContext
+                        ? deriveModalStateFromDetail(editingDetailContext.detail)
+                        : createEmptyModalState()
+                ));
+
+                React.useEffect(() => {
+                    if (!showAddSaleModal) {
+                        return;
+                    }
+
+                    if (isEditing && editingDetailContext) {
+                        setModalData(deriveModalStateFromDetail(editingDetailContext.detail));
+                    } else {
+                        setModalData(createEmptyModalState());
+                    }
+                }, [showAddSaleModal, isEditing, editingDetailContext]);
 
                 const selectedLineItems = React.useMemo(() => {
                     const discounts = modalData.discounts || {};
@@ -3211,26 +3342,49 @@
                             selectedProducts.push(`${item.displayName}${discountText}`);
                         });
                     }
-                    
+                    const manualProductLabel = (modalData.otherItemName || '').trim();
+                    if (selectedLineItems.length === 0 && manualProductLabel) {
+                        selectedProducts.push(manualProductLabel);
+                    }
+
+                    const finalAmount = selectedLineItems.length > 0
+                        ? lineItemTotals.finalSum
+                        : normalizeAmount(removeCommas(modalData.price));
+                    const hasPrice = finalAmount > 0;
+                    let finalCustomerName = (modalData.customerName || '').trim();
+
                     // 일반 매출은 회원명과 상품이 필요하지만, 가격만 있어도 등록 가능
-                    if (!modalData.customerName && selectedProducts.length === 0 && !modalData.price) {
+                    if (!finalCustomerName && selectedProducts.length === 0 && !hasPrice) {
                         alert('매출 정보를 입력해주세요.');
                         return;
                     }
                     
-                    // 가격만 입력된 경우 직접 입력으로 처리
-                    if (!modalData.customerName && selectedProducts.length === 0 && modalData.price) {
-                        modalData.customerName = '직접입력';
-                        selectedProducts.push('직접입력');
-                    } else if (!modalData.customerName || (selectedProducts.length === 0 && !modalData.price)) {
-                        alert('회원명과 상품 또는 가격을 입력해주세요.');
+                    if (!finalCustomerName && hasPrice) {
+                        finalCustomerName = '직접입력';
+                    }
+
+                    if (!finalCustomerName) {
+                        alert('회원명을 입력해주세요.');
                         return;
                     }
+
+                    if (selectedLineItems.length === 0 && !hasPrice) {
+                        alert('금액을 입력해주세요.');
+                        return;
+                    }
+
+                    if (selectedProducts.length === 0) {
+                        if (hasPrice) {
+                            selectedProducts.push(manualProductLabel || '직접입력');
+                        } else {
+                            alert('상품 또는 금액을 입력해주세요.');
+                            return;
+                        }
+                    }
                     
-                    const dateKey = getDateKey(selectedModalDay);
-                    const finalAmount = selectedLineItems.length > 0
-                        ? lineItemTotals.finalSum
-                        : normalizeAmount(removeCommas(modalData.price));
+                    const dateKey = (isEditing && editingDetailContext?.dateKey)
+                        ? editingDetailContext.dateKey
+                        : getDateKey(selectedModalDay);
 
                     const detailLineItems = selectedLineItems.map(item => ({
                         key: item.key,
@@ -3243,29 +3397,67 @@
                         discountEligible: item.discountEligible
                     }));
 
-                    const newDetail = {
-                        id: Date.now() + Math.random(),
-                        customerName: modalData.customerName.trim(),
-                        product: selectedProducts.join(', '),
-                        price: finalAmount,
-                        originalTotal: detailLineItems.reduce((sum, item) => sum + (item.originalPrice || 0), 0),
-                        discountTotal: detailLineItems.reduce((sum, item) => sum + (item.discountAmount || 0), 0),
-                        lineItems: detailLineItems,
-                        timestamp: new Date().toLocaleTimeString('ko-KR', { 
-                            hour: '2-digit', 
+                    const baseDetail = isEditing && editingDetailContext?.detail ? editingDetailContext.detail : {};
+                    const targetDetailId = isEditing && editingDetailContext?.detailId
+                        ? editingDetailContext.detailId
+                        : Date.now() + Math.random();
+
+                    const timestamp = baseDetail.timestamp
+                        ? baseDetail.timestamp
+                        : new Date().toLocaleTimeString('ko-KR', {
+                            hour: '2-digit',
                             minute: '2-digit',
                             second: '2-digit'
-                        })
+                        });
+
+                    const updatedDetail = {
+                        ...baseDetail,
+                        id: targetDetailId,
+                        customerName: finalCustomerName,
+                        product: selectedProducts.join(', '),
+                        price: finalAmount,
+                        timestamp
                     };
-                    
+
+                    if (detailLineItems.length > 0) {
+                        const originalTotal = detailLineItems.reduce((sum, item) => sum + (item.originalPrice || 0), 0);
+                        const discountTotal = detailLineItems.reduce((sum, item) => sum + (item.discountAmount || 0), 0);
+                        updatedDetail.lineItems = detailLineItems;
+                        updatedDetail.originalTotal = originalTotal;
+                        updatedDetail.discountTotal = discountTotal;
+                    } else {
+                        delete updatedDetail.lineItems;
+                        delete updatedDetail.originalTotal;
+                        updatedDetail.discountTotal = 0;
+                    }
+
                     // Firebase에 저장
                     const currentData = normalizeSalesEntry(salesData[dateKey]);
-                    const newDetails = [...currentData.details, newDetail];
-                    const newTotalAmount = newDetails.reduce((sum, detail) => sum + normalizeAmount(detail.price), 0);
-                    
+                    let newDetails;
+
+                    if (isEditing) {
+                        let replaced = false;
+                        newDetails = currentData.details.map(detail => {
+                            if (!replaced && detail.id === targetDetailId) {
+                                replaced = true;
+                                return updatedDetail;
+                            }
+                            return detail;
+                        });
+
+                        if (!replaced) {
+                            newDetails = [...newDetails, updatedDetail];
+                        }
+                    } else {
+                        newDetails = [...currentData.details, updatedDetail];
+                    }
+
+                    const normalizedDetails = normalizeDetailList(newDetails);
+                    const newTotalAmount = normalizedDetails.reduce((sum, detail) => sum + normalizeAmount(detail.price), 0);
+
                     const updatedData = {
                         ...currentData,
-                        details: normalizeDetailList(newDetails),
+                        details: normalizedDetails,
                         amount: newTotalAmount,
                         date: dateKey
                     };
@@ -3279,21 +3471,9 @@
                         return;
                     }
                     
-                    setShowAddSaleModal(false);
-                    setModalData({
-                        customerName: '',
-                        healthProduct: '',
-                        ptProduct: '',
-                        pilatesProduct: '',
-                        neofitProduct: '',
-                        lockerProduct: '',
-                        lockerType: '',
-                        lockerPeriod: '',
-                        price: '',
-                        discounts: {},
-                        manualPriceEdit: false
-                    });
-                    
+                    closeSaleModal();
+                    setModalData(createEmptyModalState());
+
                     // 오늘 날짜로 스크롤
                     setTimeout(() => {
                         const dayElement = document.getElementById(`day-${selectedModalDay}`);
@@ -3304,10 +3484,10 @@
                 };
                 
                 return (
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowAddSaleModal(false)}>
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={closeSaleModal}>
                         <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '500px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
                             <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#00FF88' }}>
-                                {selectedMonth + 1}월 {selectedModalDay}일 매출 입력
+                                {selectedMonth + 1}월 {selectedModalDay}일 {isEditing ? '매출 수정' : '매출 입력'}
                             </h3>
                             
                             <form onSubmit={handleSubmit} className="space-y-4">
@@ -3490,6 +3670,10 @@
                                         <button
                                             type="button"
                                             onClick={async () => {
+                                                if (isEditing) {
+                                                    alert('수정 모드에서는 기타 매출 추가 기능을 사용할 수 없습니다.');
+                                                    return;
+                                                }
                                                 if (modalData.otherItemName && modalData.otherItemPrice) {
                                                     const otherPrice = normalizeAmount(modalData.otherItemPrice);
                                                     const dateKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(selectedModalDay).padStart(2, '0')}`;
@@ -3541,13 +3725,14 @@
                                                     });
                                                     
                                                     // 모달 닫기
-                                                    setShowAddSaleModal(false);
+                                                    closeSaleModal();
                                                     alert('기타 매출이 추가되었습니다!');
                                                 } else {
                                                     alert('항목명과 금액을 모두 입력해주세요.');
                                                 }
                                             }}
-                                            className="glass-effect border-purple-500 hover:border-purple-400 rounded-lg py-3 font-semibold transition-all hover:shadow-lg text-white"
+                                            disabled={isEditing}
+                                            className={`glass-effect border-purple-500 hover:border-purple-400 rounded-lg py-3 font-semibold transition-all hover:shadow-lg text-white ${isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                             style={{background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.3))'}}
                                         >
                                             기타 매출 추가
@@ -3755,7 +3940,7 @@
                                 <div className="flex gap-3 pt-4">
                                     <button
                                         type="button"
-                                        onClick={() => setShowAddSaleModal(false)}
+                                        onClick={closeSaleModal}
                                         className="flex-1 glass-effect hover:border-gray-400 rounded-lg py-3 font-semibold transition-all text-gray-300 hover:text-white"
                                     >
                                         취소
@@ -3764,7 +3949,7 @@
                                         type="submit"
                                         className="flex-1 glass-effect border-green-500 hover:border-green-400 rounded-lg py-3 font-semibold transition-all hover:shadow-lg text-white"
                                     >
-                                        등록
+                                        {isEditing ? '수정 완료' : '등록'}
                                     </button>
                                 </div>
                             </form>
@@ -3875,10 +4060,16 @@
 
                 const finalTotal = normalizeAmount(amount);
                 const discountRate = originalTotal > 0 ? Math.round((discountTotal / originalTotal) * 1000) / 10 : 0;
-                const productList = (detail.product || '')
-                    .split(',')
-                    .map(item => item.trim())
-                    .filter(Boolean);
+                const productList = (() => {
+                    if (Array.isArray(lineItems) && lineItems.length > 0) {
+                        return lineItems
+                            .map(item => (item?.product || item?.productName || item?.name || '').toString().trim())
+                            .filter(Boolean);
+                    }
+
+                    const fallbackLabel = (detail.product || '').toString().trim();
+                    return fallbackLabel ? [fallbackLabel] : [];
+                })();
 
                 const renderLineItem = (item, index) => {
                     const originalPrice = normalizeAmount(item.originalPrice);
@@ -4072,7 +4263,13 @@
                                     >
                                         <p style={{ fontSize: '12px', color: 'rgba(226, 232, 240, 0.7)', marginBottom: '12px' }}>상품 요약</p>
                                         {productList.length > 0 ? (
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            <div
+                                                style={{
+                                                    display: 'flex',
+                                                    flexWrap: 'wrap',
+                                                    gap: '8px'
+                                                }}
+                                            >
                                                 {productList.map((item, index) => (
                                                     <span
                                                         key={index}
@@ -4082,7 +4279,9 @@
                                                             border: '1px solid rgba(129, 230, 217, 0.35)',
                                                             background: 'rgba(45, 212, 191, 0.12)',
                                                             color: 'rgba(167, 255, 235, 0.9)',
-                                                            fontSize: '12px'
+                                                            fontSize: '12px',
+                                                            whiteSpace: 'nowrap',
+                                                            wordBreak: 'keep-all'
                                                         }}
                                                     >
                                                         {item}
@@ -5897,15 +6096,58 @@
                                                                                 </div>
                                                                             </div>
                                                                             {!dayData.approved && (
-                                                                                <button
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        removeSaleDetail(day, detail.id);
-                                                                                    }}
-                                                                                    className="text-red-400 hover:text-red-300 p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-all"
-                                                                                >
-                                                                                    <Icon icon={Trash2} size={16} />
-                                                                                </button>
+                                                                                <div className="flex flex-col gap-2 items-end">
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            removeSaleDetail(day, detail.id);
+                                                                                        }}
+                                                                                        className="relative flex flex-col items-center justify-center gap-1 px-2 py-1.4 rounded-lg text-[10px] font-semibold transition-all"
+                                                                                        style={{
+                                                                                            minWidth: '62px',
+                                                                                            background: 'linear-gradient(145deg, rgba(251,113,133,0.75), rgba(124,58,237,0.15))',
+                                                                                            color: 'rgba(255,241,242,0.9)',
+                                                                                            boxShadow: '0 8px 18px rgba(251,113,133,0.18)',
+                                                                                            border: '1px solid rgba(251,113,133,0.4)',
+                                                                                            textShadow: '0 1px 6px rgba(0,0,0,0.25)'
+                                                                                        }}
+                                                                                        aria-label="매출 내역 삭제"
+                                                                                    >
+                                                                                        <span className="absolute inset-0 rounded-xl" style={{
+                                                                                            background: 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0))',
+                                                                                            opacity: 0.55,
+                                                                                            pointerEvents: 'none'
+                                                                                        }}></span>
+                                                                                        <Icon icon={Trash2} size={11} style={{ filter: 'drop-shadow(0 0 4px rgba(251,113,133,0.45))' }} />
+                                                                                        <span style={{ fontSize: '10px', fontWeight: 600, textAlign: 'center' }}>삭제</span>
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            openAddSaleModal(day, detail, dateKey);
+                                                                                        }}
+                                                                                        className="relative flex flex-col items-center justify-center gap-1 px-2 py-1.4 rounded-lg text-[10px] font-semibold transition-all"
+                                                                                        style={{
+                                                                                            minWidth: '62px',
+                                                                                            background: 'linear-gradient(145deg, rgba(45,212,191,0.75), rgba(56,189,248,0.18))',
+                                                                                            color: 'rgba(240,253,250,0.92)',
+                                                                                            boxShadow: '0 8px 18px rgba(45,212,191,0.18)',
+                                                                                            border: '1px solid rgba(45,212,191,0.4)',
+                                                                                            textShadow: '0 1px 6px rgba(0,0,0,0.25)'
+                                                                                        }}
+                                                                                        aria-label="매출 내역 수정"
+                                                                                    >
+                                                                                        <span className="absolute inset-0 rounded-xl" style={{
+                                                                                            background: 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0))',
+                                                                                            opacity: 0.55,
+                                                                                            pointerEvents: 'none'
+                                                                                        }}></span>
+                                                                                        <Icon icon={Edit} size={11} style={{ filter: 'drop-shadow(0 0 4px rgba(56,189,248,0.4))' }} />
+                                                                                        <span style={{ fontSize: '10px', fontWeight: 600, textAlign: 'center' }}>수정</span>
+                                                                                    </button>
+                                                                                </div>
                                                                             )}
                                                                         </div>
                                                                     </div>
