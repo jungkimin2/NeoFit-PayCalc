@@ -6305,36 +6305,77 @@
                         </div>
 
                         {/* 통계 요약 */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                            <div className="glass-effect rounded-2xl p-4 text-center transition-all">
-                                <p className="text-gray-400 text-sm mb-1">오늘 매출</p>
-                                <p className="text-2xl font-bold text-white">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                            {/* 오늘 매출 카드 */}
+                            <div className="card-3d glass-premium rounded-2xl p-5 text-center neon-border-green" style={{ animationDelay: '0.1s' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(156, 163, 175, 1)', fontWeight: '600' }}>오늘 매출</p>
+                                    <div className="icon-container" style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px' }}>
+                                        <Icon icon={Calendar} size={16} style={{ color: '#9ca3af' }} />
+                                    </div>
+                                </div>
+                                <p className="text-2xl sm:text-3xl font-black text-white count-up" style={{ marginBottom: '8px' }}>
                                     {getTodaySales().toLocaleString()}원
                                 </p>
+                                <div className="progress-bar" style={{ marginTop: '12px' }}>
+                                    <div className="progress-fill" style={{ width: `${Math.min((getTodaySales() / 1000000) * 100, 100)}%`, background: 'linear-gradient(90deg, #6b7280, #9ca3af)' }}></div>
+                                </div>
                             </div>
-                            <div className="glass-effect rounded-2xl p-4 text-center transition-all">
-                                <p className="text-gray-400 text-sm mb-1">이번주 매출</p>
-                                <p className="text-2xl font-bold" style={{ color: '#00C6FF' }}>
+
+                            {/* 이번주 매출 카드 */}
+                            <div className="card-3d glass-premium rounded-2xl p-5 text-center" style={{ borderColor: 'rgba(0, 198, 255, 0.3)', animationDelay: '0.2s' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(156, 163, 175, 1)', fontWeight: '600' }}>이번주 매출</p>
+                                    <div className="icon-container" style={{ background: 'rgba(0, 198, 255, 0.1)', padding: '8px', borderRadius: '8px' }}>
+                                        <Icon icon={TrendingUp} size={16} style={{ color: '#00C6FF' }} />
+                                    </div>
+                                </div>
+                                <p className="text-2xl sm:text-3xl font-black count-up" style={{ color: '#00C6FF', marginBottom: '8px' }}>
                                     {getThisWeekSales().toLocaleString()}원
                                 </p>
+                                <div className="progress-bar" style={{ marginTop: '12px' }}>
+                                    <div className="progress-fill shimmer-effect" style={{ width: `${Math.min((getThisWeekSales() / 5000000) * 100, 100)}%`, background: 'linear-gradient(90deg, #00C6FF, #0ea5e9)' }}></div>
+                                </div>
                             </div>
-                            <div className="glass-effect rounded-2xl p-4 text-center transition-all">
-                                <p className="text-gray-400 text-sm mb-1">월 매출</p>
-                                <p className="text-2xl font-bold" style={{
+
+                            {/* 월 매출 카드 */}
+                            <div className="card-3d glass-premium rounded-2xl p-5 text-center" style={{ borderColor: 'rgba(255, 107, 53, 0.3)', animationDelay: '0.3s' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(156, 163, 175, 1)', fontWeight: '600' }}>월 매출</p>
+                                    <div className="icon-container" style={{ background: 'rgba(255, 107, 53, 0.1)', padding: '8px', borderRadius: '8px' }}>
+                                        <Icon icon={DollarSign} size={16} style={{ color: '#FF6B35' }} />
+                                    </div>
+                                </div>
+                                <p className="text-2xl sm:text-3xl font-black count-up" style={{
                                     color: '#FF6B35',
-                                    textShadow: '0 0 10px rgba(255, 107, 53, 0.5), 0 0 20px rgba(255, 107, 53, 0.3), 0 0 30px rgba(255, 107, 53, 0.2)'
+                                    textShadow: '0 0 15px rgba(255, 107, 53, 0.5)',
+                                    marginBottom: '8px'
                                 }}>
                                     {monthlyTotal.toLocaleString()}원
                                 </p>
+                                <div className="progress-bar" style={{ marginTop: '12px' }}>
+                                    <div className="progress-fill shimmer-effect" style={{ width: `${Math.min((monthlyTotal / 30000000) * 100, 100)}%`, background: 'linear-gradient(90deg, #FF6B35, #f97316)' }}></div>
+                                </div>
                             </div>
-                            <div className="glass-effect rounded-2xl p-4 text-center transition-all">
-                                <p className="text-gray-400 text-sm mb-1">예상 인센티브</p>
-                                <p className="text-2xl font-bold" style={{ 
+
+                            {/* 예상 인센티브 카드 */}
+                            <div className="card-3d glass-premium rounded-2xl p-5 text-center glow-animation" style={{ borderColor: 'rgba(0, 255, 136, 0.3)', animationDelay: '0.4s' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(156, 163, 175, 1)', fontWeight: '600' }}>예상 인센티브</p>
+                                    <div className="icon-container" style={{ background: 'rgba(0, 255, 136, 0.1)', padding: '8px', borderRadius: '8px' }}>
+                                        <Icon icon={Check} size={16} style={{ color: '#00FF88' }} />
+                                    </div>
+                                </div>
+                                <p className="text-2xl sm:text-3xl font-black count-up" style={{
                                     color: '#00FF88',
-                                    textShadow: '0 0 10px rgba(0, 255, 136, 0.8), 0 0 20px rgba(0, 255, 136, 0.6), 0 0 30px rgba(0, 255, 136, 0.4)'
+                                    textShadow: '0 0 15px rgba(0, 255, 136, 0.6)',
+                                    marginBottom: '8px'
                                 }}>
                                     {Math.floor(incentiveAmount).toLocaleString()}원
                                 </p>
+                                <div className="progress-bar" style={{ marginTop: '12px' }}>
+                                    <div className="progress-fill shimmer-effect" style={{ width: `${Math.min((incentiveAmount / 3000000) * 100, 100)}%`, background: 'linear-gradient(90deg, #00FF88, #10b981)' }}></div>
+                                </div>
                             </div>
                         </div>
 
@@ -6976,22 +7017,29 @@
                                     주간 매출 합계
                                 </h2>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                                     {weeklySales.map((week, index) => {
                                         // week.days가 없거나 비어있으면 건너뛰기
                                         if (!week || !week.days || week.days.length === 0) {
                                             return null;
                                         }
-                                        
+                                        const weekProgress = ((week.total || 0) / 10000000) * 100;
+
                                         return (
-                                            <div key={index} className="glass-effect rounded-2xl p-5 hover:scale-105 transition-all duration-300">
+                                            <div key={index} className="card-3d glass-premium rounded-2xl p-5 hover-lift" style={{ borderColor: 'rgba(0, 198, 255, 0.2)' }}>
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm text-gray-400 mb-2">
+                                                    <span style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9ca3af', fontWeight: '600', marginBottom: '4px' }}>
+                                                        주차 {index + 1}
+                                                    </span>
+                                                    <span className="text-sm text-gray-500 mb-3">
                                                         {week.days[0]}일 - {week.days[week.days.length - 1]}일
                                                     </span>
-                                                    <span className="text-2xl font-black" style={{ color: '#00C6FF' }}>
+                                                    <span className="text-xl sm:text-2xl font-black count-up" style={{ color: '#00C6FF', marginBottom: '8px' }}>
                                                         {(week.total || 0).toLocaleString()}원
                                                     </span>
+                                                    <div className="progress-bar">
+                                                        <div className="progress-fill" style={{ width: `${Math.min(weekProgress, 100)}%`, background: 'linear-gradient(90deg, #00C6FF, #3b82f6)' }}></div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -7202,38 +7250,51 @@
                         {/* 월간 총계 및 인센티브 */}
                         <div className="gradient-border glow-green">
                             <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50">
-                                <h2 className="text-3xl font-black mb-8 text-center text-white">
+                                <h2 className="text-3xl sm:text-4xl font-black mb-10 text-center gradient-text-gold">
                                     월간 급여 계산
                                 </h2>
-                                
+
                                 {/* 메인 카드 - 월간 총매출 */}
-                                <div className="mb-8">
-                                    <div className="glass-effect rounded-3xl p-8 text-center hover:scale-105 transition-all duration-300 shadow-2xl relative overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-500/10 opacity-50"></div>
+                                <div className="mb-10">
+                                    <div className="card-3d glass-premium rounded-3xl p-8 sm:p-10 text-center shadow-2xl relative overflow-hidden" style={{ borderColor: 'rgba(255, 107, 53, 0.3)' }}>
+                                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-red-500/5 to-transparent"></div>
+                                        <div className="absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br from-orange-500/20 to-transparent rounded-full blur-3xl"></div>
                                         <div className="relative z-10">
-                                            <p className="text-gray-400 text-lg mb-4 font-semibold">📊 월간 총매출</p>
-                                            <p className="text-4xl sm:text-5xl font-black mb-2" style={{
+                                            <p style={{ fontSize: '12px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#9ca3af', fontWeight: '600', marginBottom: '16px' }}>📊 월간 총매출</p>
+                                            <p className="text-5xl sm:text-6xl lg:text-7xl font-black mb-4 count-up" style={{
                                                 color: '#FF6B35',
-                                                textShadow: '0 0 20px rgba(255, 107, 53, 0.6), 0 0 30px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2)'
+                                                textShadow: '0 0 30px rgba(255, 107, 53, 0.6), 0 0 50px rgba(255, 107, 53, 0.3)'
                                             }}>{(monthlyTotal || 0).toLocaleString()}원</p>
-                                            <div className="flex justify-center space-x-2 text-sm text-gray-500">
-                                                <span>💰 Total Revenue</span>
+                                            <div className="progress-bar" style={{ maxWidth: '300px', margin: '16px auto 0' }}>
+                                                <div className="progress-fill shimmer-effect" style={{ width: `${Math.min((monthlyTotal / 50000000) * 100, 100)}%`, background: 'linear-gradient(90deg, #FF6B35, #f97316, #FF6B35)' }}></div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 text-center mb-6 sm:mb-8">
-                                    <div className="glass-effect rounded-2xl p-4 sm:p-6 hover:scale-105 transition-all duration-300">
-                                        <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 font-semibold">인센티브율 ({employeeType === 'full' ? '정직원' : '파트타임'})</p>
-                                        <p className="text-2xl sm:text-3xl font-black" style={{ color: '#00C6FF' }}>{incentiveRate || 0}%</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 text-center mb-8">
+                                    <div className="card-3d glass-premium rounded-2xl p-6 sm:p-8" style={{ borderColor: 'rgba(0, 198, 255, 0.3)' }}>
+                                        <div className="icon-container" style={{ background: 'rgba(0, 198, 255, 0.1)', padding: '12px', borderRadius: '12px', width: 'fit-content', margin: '0 auto 16px' }}>
+                                            <Icon icon={TrendingUp} size={24} style={{ color: '#00C6FF' }} />
+                                        </div>
+                                        <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9ca3af', fontWeight: '600', marginBottom: '12px' }}>인센티브율 ({employeeType === 'full' ? '정직원' : '파트타임'})</p>
+                                        <p className="text-3xl sm:text-4xl font-black count-up" style={{ color: '#00C6FF' }}>{incentiveRate || 0}%</p>
+                                        <div className="progress-bar" style={{ marginTop: '16px' }}>
+                                            <div className="progress-fill" style={{ width: `${(incentiveRate / 10) * 100}%`, background: 'linear-gradient(90deg, #00C6FF, #3b82f6)' }}></div>
+                                        </div>
                                     </div>
 
-                                    <div className="glass-effect rounded-2xl p-4 sm:p-6 hover:scale-105 transition-all duration-300">
-                                        <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 font-semibold">인센티브 금액</p>
-                                        <p className="text-2xl sm:text-3xl font-black" style={{ color: '#00FF88' }}>
+                                    <div className="card-3d glass-premium rounded-2xl p-6 sm:p-8 glow-animation" style={{ borderColor: 'rgba(0, 255, 136, 0.3)' }}>
+                                        <div className="icon-container" style={{ background: 'rgba(0, 255, 136, 0.1)', padding: '12px', borderRadius: '12px', width: 'fit-content', margin: '0 auto 16px' }}>
+                                            <Icon icon={DollarSign} size={24} style={{ color: '#00FF88' }} />
+                                        </div>
+                                        <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9ca3af', fontWeight: '600', marginBottom: '12px' }}>인센티브 금액</p>
+                                        <p className="text-3xl sm:text-4xl font-black count-up" style={{ color: '#00FF88', textShadow: '0 0 20px rgba(0, 255, 136, 0.5)' }}>
                                             {Math.floor(incentiveAmount || 0).toLocaleString()}원
                                         </p>
+                                        <div className="progress-bar" style={{ marginTop: '16px' }}>
+                                            <div className="progress-fill shimmer-effect" style={{ width: `${Math.min((incentiveAmount / 5000000) * 100, 100)}%`, background: 'linear-gradient(90deg, #00FF88, #10b981)' }}></div>
+                                        </div>
                                     </div>
                                 </div>
 
