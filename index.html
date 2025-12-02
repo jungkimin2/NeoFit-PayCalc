@@ -498,6 +498,78 @@
         .right-0 { right: 0; }
         .mt-2 { margin-top: 0.5rem; }
         .opacity-0 { opacity: 0; }
+
+        /* 원형 차트 & 카테고리 카드 반응형 레이아웃 */
+        .category-chart-container {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chart-wrapper {
+            flex-shrink: 0;
+        }
+
+        .chart-canvas-wrapper {
+            width: 480px;
+            height: 480px;
+            position: relative;
+        }
+
+        .category-cards-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .category-card {
+            width: 450px;
+        }
+
+        /* 모바일 반응형 (768px 이하) */
+        @media (max-width: 768px) {
+            .category-chart-container {
+                flex-direction: column;
+                gap: 24px;
+                align-items: center;
+            }
+
+            .chart-wrapper {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+            }
+
+            .chart-canvas-wrapper {
+                width: 320px;
+                height: 320px;
+            }
+
+            .category-cards-wrapper {
+                width: 100%;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .category-card {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+
+        /* 작은 모바일 (480px 이하) */
+        @media (max-width: 480px) {
+            .chart-canvas-wrapper {
+                width: 280px;
+                height: 280px;
+            }
+
+            .category-card {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -880,12 +952,34 @@
                                 borderWidth: 1,
                                 displayColors: false,
                                 callbacks: {
-                                    title: (items) => (items.length ? items[0].label : ''),
+                                    title: (items) => {
+                                        if (!items.length) return '';
+                                        const monthLabel = items[0].label;
+                                        const total = visibleTotalsPerMonth[items[0].dataIndex] || 0;
+                                        return `${monthLabel} 총합 ${total.toLocaleString()}원`;
+                                    },
                                     label: (context) => {
                                         const value = context.parsed.y || 0;
-                                        const total = visibleTotalsPerMonth[context.dataIndex] || 0;
-                                        const share = total ? ` · ${(value / total * 100).toFixed(1)}%` : '';
-                                        return `${context.dataset.label}: ${value.toLocaleString()}원${share}`;
+                                        const dataIndex = context.dataIndex;
+
+                                        // 전월 데이터 가져오기
+                                        const prevValue = dataIndex > 0 ? (context.dataset.data[dataIndex - 1] || 0) : 0;
+
+                                        // 전월대비 증감률 계산
+                                        let changeText = '';
+                                        if (dataIndex === 0) {
+                                            changeText = ''; // 첫 달은 비교 불가
+                                        } else if (prevValue === 0 && value > 0) {
+                                            changeText = ' · 전월대비 신규';
+                                        } else if (prevValue === 0 && value === 0) {
+                                            changeText = ' · 전월대비 0%';
+                                        } else {
+                                            const change = ((value - prevValue) / prevValue * 100);
+                                            const sign = change > 0 ? '+' : '';
+                                            changeText = ` · 전월대비 ${sign}${change.toFixed(1)}%`;
+                                        }
+
+                                        return `${context.dataset.label}: ${value.toLocaleString()}원${changeText}`;
                                     },
                                     labelTextColor: (context) => {
                                         const datasetLabel = context.dataset?.label || '';
@@ -1049,24 +1143,24 @@
             ADMIN_PASSWORD: '4405', // 관리자 비밀번호
             INCENTIVE_RATES: {
                 full: {
-                    60000000: 12,
-                    50000000: 10,
-                    45000000: 9,
-                    40000000: 8,
-                    35000000: 7,
-                    30000000: 6,
-                    25000000: 5,
-                    0: 4
+                    40000000: 8,   // 4,000만 원 이상: 8%
+                    35000000: 7,   // 3,500만 원 이상 ~ 4,000만 원 미만: 7%
+                    30000000: 6,   // 3,000만 원 이상 ~ 3,500만 원 미만: 6%
+                    25000000: 5,   // 2,500만 원 이상 ~ 3,000만 원 미만: 5%
+                    22000000: 4,   // 2,200만 원 이상 ~ 2,500만 원 미만: 4%
+                    18000000: 3,   // 1,800만 원 이상 ~ 2,200만 원 미만: 3%
+                    15000000: 2,   // 1,500만 원 이상 ~ 1,800만 원 미만: 2%
+                    0: 0           // 1,500만 원 미만: 0%
                 },
                 part: {
-                    60000000: 6,
-                    50000000: 5,
-                    45000000: 4.5,
-                    40000000: 4,
-                    35000000: 3.5,
-                    30000000: 3,
-                    25000000: 2.5,
-                    0: 2
+                    40000000: 4,   // 4,000만 원 이상: 4%
+                    35000000: 3.5, // 3,500만 원 이상 ~ 4,000만 원 미만: 3.5%
+                    30000000: 3,   // 3,000만 원 이상 ~ 3,500만 원 미만: 3%
+                    25000000: 2.5, // 2,500만 원 이상 ~ 3,000만 원 미만: 2.5%
+                    22000000: 2,   // 2,200만 원 이상 ~ 2,500만 원 미만: 2%
+                    18000000: 1.5, // 1,800만 원 이상 ~ 2,200만 원 미만: 1.5%
+                    15000000: 1,   // 1,500만 원 이상 ~ 1,800만 원 미만: 1%
+                    0: 0           // 1,500만 원 미만: 0%
                 }
             }
         };
@@ -2246,7 +2340,7 @@
 
             const snapshotSalesEntries = React.useMemo(() => {
                 const activeMonthSales = Array.isArray(dailySales)
-                    ? dailySales.filter(sale => sale && isDateInActiveMonth(sale.date))
+                    ? dailySales.filter(sale => sale && sale.approved && isDateInActiveMonth(sale.date))
                     : [];
 
                 if (activeMonthSales.length > 0) {
@@ -2603,7 +2697,7 @@
                         currentTotal: 0,
                         average: 0,
                         percentChange: null,
-                        changeText: '최근 6개월 데이터 없음',
+                        changeText: '데이터 없음',
                         toneClass: 'text-gray-500',
                         rangeLabel: ''
                     };
@@ -2611,58 +2705,49 @@
 
                 const currentEntry = series.find(entry => entry.offset === 0) || series[series.length - 1];
                 const currentTotal = currentEntry ? currentEntry.total || 0 : 0;
-                const previousEntries = series.filter(entry => entry.offset < 0);
-                const previousWithData = previousEntries.filter(entry => (entry.total || 0) > 0);
 
-                const averageSource = previousWithData.length > 0 ? previousWithData : previousEntries;
-                const average = averageSource.length > 0
-                    ? averageSource.reduce((sum, entry) => sum + (entry.total || 0), 0) / averageSource.length
-                    : 0;
+                // 전월 데이터 가져오기 (offset -1)
+                const previousMonthEntry = series.find(entry => entry.offset === -1);
+                const previousMonthTotal = previousMonthEntry ? previousMonthEntry.total || 0 : 0;
 
                 let percentChange = null;
-                let changeText = '최근 6개월 평균과 동일';
+                let changeText = '전월대비 동일';
                 let toneClass = 'text-gray-400';
 
-                const hasHistory = averageSource.some(entry => (entry.total || 0) > 0);
-
-                if (!hasHistory && currentTotal === 0) {
-                    changeText = '최근 6개월 데이터 없음';
+                // 전월대비 증감률 계산
+                if (previousMonthTotal === 0 && currentTotal === 0) {
+                    changeText = '데이터 없음';
                     toneClass = 'text-gray-500';
-                } else if (!hasHistory && currentTotal > 0) {
-                    changeText = '최근 6개월 평균 대비 신규 매출';
+                } else if (previousMonthTotal === 0 && currentTotal > 0) {
+                    changeText = '전월대비 신규';
                     toneClass = 'text-emerald-400';
-                } else if (average === 0) {
-                    changeText = '최근 6개월 평균과 동일';
+                } else if (previousMonthTotal > 0 && currentTotal === 0) {
+                    changeText = '전월대비 -100%';
+                    toneClass = 'text-rose-400';
+                    percentChange = -100;
                 } else {
-                    const rawChange = ((currentTotal - average) / average) * 100;
+                    const rawChange = ((currentTotal - previousMonthTotal) / previousMonthTotal) * 100;
                     percentChange = Number(rawChange.toFixed(1));
 
                     if (Math.abs(percentChange) < 0.1) {
-                        changeText = '최근 6개월 평균과 유사';
+                        changeText = '전월대비 동일';
                     } else if (percentChange > 0) {
-                        changeText = `최근 6개월 평균 대비 +${percentChange}%`;
+                        changeText = `전월대비 +${percentChange}%`;
                         toneClass = 'text-emerald-400';
                     } else {
-                        changeText = `최근 6개월 평균 대비 ${percentChange}%`;
+                        changeText = `전월대비 ${percentChange}%`;
                         toneClass = 'text-rose-400';
                     }
                 }
 
-                const rangeEntries = [...averageSource, currentEntry]
-                    .filter(entry => entry && typeof entry.month === 'number')
-                    .sort((a, b) => (a.offset || 0) - (b.offset || 0));
-                const rangeLabel = rangeEntries.length > 0
-                    ? `${rangeEntries[0].month}월~${rangeEntries[rangeEntries.length - 1].month}월`
-                    : '';
-
                 return {
                     series,
                     currentTotal,
-                    average,
+                    average: previousMonthTotal, // 전월 매출을 average로 저장
                     percentChange,
                     changeText,
                     toneClass,
-                    rangeLabel
+                    rangeLabel: '' // rangeLabel은 더 이상 사용하지 않음
                 };
             };
 
@@ -2889,6 +2974,206 @@
                 }
                 return 0;
             }, [weeklySales, selectedMonth, selectedYear]);
+
+            // 파이 차트 렌더링
+            React.useEffect(() => {
+                const canvas = document.getElementById('categoryPieChart');
+                if (!canvas) return;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                // 기존 차트 제거
+                if (window.categoryPieChartInstance) {
+                    window.categoryPieChartInstance.destroy();
+                }
+
+                // 0이 아닌 카테고리만 필터링
+                const validCategories = categorySnapshots.filter(cat => cat.total > 0);
+
+                // 데이터가 없을 때 빈 차트 표시
+                const hasData = validCategories.length > 0;
+                const displayCategories = hasData ? validCategories : [{
+                    key: 'empty',
+                    label: '데이터 없음',
+                    icon: '📊',
+                    color: '#64748b',
+                    total: 1
+                }];
+
+                // 글래스모피즘 그라데이션 생성
+                const createGlassGradient = (ctx, color) => {
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                    // 색상을 rgba로 변환하여 투명도 적용
+                    const hexToRgba = (hex, alpha) => {
+                        const r = parseInt(hex.slice(1, 3), 16);
+                        const g = parseInt(hex.slice(3, 5), 16);
+                        const b = parseInt(hex.slice(5, 7), 16);
+                        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                    };
+                    gradient.addColorStop(0, hexToRgba(color, 0.85));
+                    gradient.addColorStop(0.5, hexToRgba(color, 0.65));
+                    gradient.addColorStop(1, hexToRgba(color, 0.85));
+                    return gradient;
+                };
+
+                const glassColors = displayCategories.map(cat => createGlassGradient(ctx, cat.color));
+
+                // 범례 텍스트 색상 커스터마이징 플러그인
+                const legendColorPlugin = {
+                    id: 'legendColor',
+                    afterUpdate(chart) {
+                        const legend = chart.legend;
+                        if (legend && legend.legendItems) {
+                            legend.legendItems.forEach((item, i) => {
+                                if (displayCategories[i]) {
+                                    item.fontColor = displayCategories[i].color;
+                                }
+                            });
+                        }
+                    },
+                    afterDraw(chart) {
+                        const legend = chart.legend;
+                        if (!legend) return;
+
+                        const ctx = chart.ctx;
+                        legend.legendItems.forEach((item, i) => {
+                            if (displayCategories[i]) {
+                                const legendItem = legend.legendHitBoxes[i];
+                                if (legendItem) {
+                                    ctx.save();
+                                    ctx.fillStyle = displayCategories[i].color;
+                                    ctx.restore();
+                                }
+                            }
+                        });
+                    }
+                };
+
+                // 차트 중앙에 총매출 표시 플러그인
+                const centerTextPlugin = {
+                    id: 'centerText',
+                    afterDatasetsDraw(chart) {
+                        if (!chart || !chart.ctx || !chart.chartArea) return;
+
+                        const { ctx, chartArea } = chart;
+                        const { left, top, right, bottom } = chartArea;
+
+                        ctx.save();
+
+                        try {
+                            // 총매출 계산 (실제 데이터만)
+                            const total = hasData ? validCategories.reduce((sum, cat) => sum + (cat.total || 0), 0) : 0;
+                            const totalText = total.toLocaleString() + '원';
+
+                            // 중앙 좌표 계산
+                            const centerX = (left + right) / 2;
+                            const centerY = (top + bottom) / 2;
+
+                            // 라벨 텍스트 (작게)
+                            ctx.font = 'bold 16px Pretendard, sans-serif';
+                            ctx.fillStyle = '#9ca3af';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.shadowBlur = 0;
+                            ctx.fillText('총매출', centerX, centerY - 30);
+
+                            // 금액 텍스트 (크게, 주황 네온 효과 - 부드럽게)
+                            ctx.font = 'bold 32px Pretendard, sans-serif';
+                            ctx.fillStyle = '#FF6B35';
+                            ctx.shadowColor = 'rgba(255, 107, 53, 0.6)';
+                            ctx.shadowBlur = 15;
+
+                            // 네온 효과 (한 번만 그리기)
+                            ctx.fillText(totalText, centerX, centerY + 10);
+                        } catch (error) {
+                            console.error('Center text plugin error:', error);
+                        }
+
+                        ctx.restore();
+                    }
+                };
+
+                const ChartCtor = window.Chart || window.ChartJS;
+                window.categoryPieChartInstance = new ChartCtor(ctx, {
+                    type: 'doughnut',
+                    plugins: [legendColorPlugin, centerTextPlugin],
+                    data: {
+                        labels: displayCategories.map(cat => cat.label),
+                        datasets: [{
+                            data: displayCategories.map(cat => cat.total),
+                            backgroundColor: glassColors,
+                            borderColor: displayCategories.map(cat => cat.color),
+                            borderWidth: hasData ? 3 : 2,
+                            hoverBorderWidth: hasData ? 4 : 2,
+                            hoverBorderColor: hasData ? '#ffffff' : '#64748b'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        cutout: '65%',
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    font: {
+                                        family: 'Pretendard, sans-serif',
+                                        size: 12,
+                                        weight: '600'
+                                    },
+                                    padding: 16,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    generateLabels: (chart) => {
+                                        const data = chart.data;
+                                        return data.labels.map((label, i) => {
+                                            const value = data.datasets[0].data[i];
+                                            const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                            const percentage = hasData ? ((value / total) * 100).toFixed(1) : '0.0';
+                                            return {
+                                                text: `${displayCategories[i].icon} ${label}: ${percentage}%`,
+                                                fillStyle: displayCategories[i].color,
+                                                strokeStyle: displayCategories[i].color,
+                                                fontColor: displayCategories[i].color,
+                                                hidden: false,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                titleColor: '#F9FAFB',
+                                bodyColor: '#E5E7EB',
+                                borderColor: 'rgba(148, 163, 184, 0.3)',
+                                borderWidth: 1,
+                                padding: 16,
+                                displayColors: true,
+                                boxPadding: 6,
+                                usePointStyle: true,
+                                callbacks: {
+                                    label: (context) => {
+                                        const value = context.parsed;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${context.label}: ${value.toLocaleString()}원 (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                return () => {
+                    if (window.categoryPieChartInstance) {
+                        window.categoryPieChartInstance.destroy();
+                        window.categoryPieChartInstance = null;
+                    }
+                };
+            }, [JSON.stringify(categorySnapshots.map(c => ({ key: c.key, total: c.total })))]);
 
             // SVG 아이콘 컴포넌트
             const Icon = ({ icon: iconName, size = 24, style = {}, className = "" }) => {
@@ -5996,7 +6281,13 @@
                                                 </div>
                                                 
                                                 <div className={`rounded-xl p-3 sm:p-4 mb-3 sm:mb-4 ${dayAmount > 0 ? 'bg-gradient-to-r from-green-500/10 to-blue-500/10' : 'bg-gray-800/50'}`}>
-                                                    <div className="text-2xl sm:text-3xl font-black mb-1" style={{ color: dayAmount > 0 ? '#00FF88' : '#6b7280' }}>
+                                                    <div className={`font-black mb-1 ${(() => {
+                                                        const amountText = dayAmount.toLocaleString() + '원';
+                                                        const length = amountText.length;
+                                                        if (length <= 10) return 'text-2xl sm:text-3xl';
+                                                        if (length <= 13) return 'text-xl sm:text-2xl';
+                                                        return 'text-lg sm:text-xl';
+                                                    })()}`} style={{ color: dayAmount > 0 ? '#00FF88' : '#6b7280', whiteSpace: 'nowrap' }}>
                                                         {dayAmount.toLocaleString()}원
                                                     </div>
                                                     <div className="text-xs sm:text-sm text-gray-400 flex items-center gap-2">
@@ -6573,56 +6864,64 @@
                                 </div>
                                 {/* 주요 카테고리 매출 비교 */}
                                 <div className="glass-effect rounded-2xl p-6">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                                    <div className="flex items-center justify-between mb-6">
                                         <h3 className="text-lg font-semibold text-gray-300">🎯 주요 카테고리 매출</h3>
                                         <span className="text-xs text-gray-500">{benchmarkLabel}</span>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    <div className="category-chart-container">
+                                        {/* 좌측: 원형 차트 (박스 제거, 크기 증가) */}
+                                        <div className="chart-wrapper">
+                                            <div className="chart-canvas-wrapper">
+                                                <canvas id="categoryPieChart"></canvas>
+                                            </div>
+                                        </div>
+                                        {/* 우측: 카테고리 카드 1열 (우측 정렬) */}
+                                        <div className="category-cards-wrapper">
                                         {categorySnapshots.map((category) => {
                                             const shareValue = Number.isFinite(category.share) ? category.share : 0;
                                             const shareLabel = shareValue.toFixed(1);
-                                            const shareWidth = Math.min(100, Math.max(0, shareValue));
+
+                                            // 전월대비 텍스트 색상만 적용
+                                            let textColor = '#9ca3af'; // 회색
+
+                                            if (category.trend.changeText.includes('+')) {
+                                                textColor = '#34d399'; // 그린
+                                            } else if (category.trend.changeText.includes('-') && !category.trend.changeText.includes('100%')) {
+                                                textColor = '#fb7185'; // 레드
+                                            }
 
                                             return (
                                                 <div
                                                     key={category.key}
-                                                    className="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-gradient-to-br from-slate-950/70 via-slate-900/70 to-slate-950/70 p-6 transition-shadow hover:shadow-lg hover:shadow-emerald-500/10"
+                                                    className="category-card relative overflow-hidden rounded-lg border border-slate-800/60 bg-gradient-to-br from-slate-950/50 via-slate-900/50 to-slate-950/50 p-3 transition-all hover:scale-[1.02] hover:shadow-lg"
+                                                    style={{
+                                                        backdropFilter: 'blur(8px)'
+                                                    }}
                                                 >
-                                                    <div className={`absolute inset-x-8 top-0 h-[2px] bg-gradient-to-r ${category.accent} opacity-80`}></div>
-                                                    <div className="flex items-start justify-between mb-6">
-                                                        <div className="flex items-center gap-3">
+                                                    <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r ${category.accent} opacity-60`}></div>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2 flex-1">
                                                             <span className="text-xl">{category.icon}</span>
-                                                            <div>
-                                                                <p className="text-sm font-semibold text-gray-200">{category.label}</p>
-                                                                <p className="text-xs text-gray-500">총매출 대비 {shareLabel}%</p>
+                                                            <div className="flex-1">
+                                                                <p className="text-xs font-semibold text-gray-200">{category.label}</p>
+                                                                <p className="text-lg font-bold mt-0.5" style={{ color: category.color }}>
+                                                                    {category.total.toLocaleString()}원
+                                                                </p>
                                                             </div>
                                                         </div>
-                                                        <span className={`text-[11px] px-2 py-1 rounded-full border border-slate-700/60 bg-slate-900/60 ${category.trend.toneClass}`}>
-                                                            {category.trend.changeText}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-3xl font-extrabold" style={{ color: category.color }}>
-                                                        {category.total.toLocaleString()}원
-                                                    </div>
-                                                    <div className="mt-3 text-xs text-gray-400 flex items-center gap-2">
-                                                        <span className="inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: category.color }}></span>
-                                                        {(category.rangeLabel ? `${category.rangeLabel} 평균` : '최근 6개월 평균')} {category.averageLabel}
-                                                    </div>
-                                                    <div className="mt-5">
-                                                        <div className="flex items-center justify-between text-[11px] text-gray-500 mb-2">
-                                                            <span>총매출 기여도</span>
-                                                            <span>{shareLabel}%</span>
-                                                        </div>
-                                                        <div className="h-1.5 w-full rounded-full bg-slate-800">
-                                                            <div
-                                                                className="h-1.5 rounded-full transition-all duration-500"
-                                                                style={{ width: `${shareWidth}%`, backgroundColor: category.color }}
-                                                            ></div>
+                                                        <div className="flex flex-col items-end gap-1">
+                                                            <span
+                                                                className="text-[10px] font-semibold whitespace-nowrap"
+                                                                style={{ color: textColor }}
+                                                            >
+                                                                {category.trend.changeText}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             );
                                         })}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -6652,57 +6951,6 @@
                                     </div>
                                 </div>
 
-                                {/* 카테고리별 매출 그리드 */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                                    {categorySnapshots.map((category) => {
-                                        const shareValue = Number.isFinite(category.share) ? category.share : 0;
-                                        const shareLabel = shareValue.toFixed(1);
-                                        const shareWidth = Math.min(100, Math.max(0, shareValue));
-
-                                        return (
-                                            <div
-                                                key={category.key}
-                                                className="glass-effect rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 relative overflow-hidden"
-                                            >
-                                                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${category.accent} opacity-80`}></div>
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="text-lg">{category.icon}</div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-200">{category.label}</p>
-                                                            <p className="text-xs text-gray-500">총매출 대비 {shareLabel}%</p>
-                                                        </div>
-                                                    </div>
-                                                    <span className={`text-[11px] px-2 py-1 rounded-full border border-slate-700/60 bg-slate-900/60 ${category.trend.toneClass}`}>
-                                                        {category.trend.changeText}
-                                                    </span>
-                                                </div>
-                                                <div className="text-3xl font-black" style={{ color: category.color }}>
-                                                    {category.total.toLocaleString()}원
-                                                </div>
-                                                <div className="mt-4 flex flex-col gap-3 text-xs">
-                                                    <div className="flex items-center justify-between rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-2">
-                                                        <span className="text-[11px] text-gray-500">{category.rangeLabel ? `${category.rangeLabel} 평균` : '최근 6개월 평균'}</span>
-                                                        <span className="font-semibold text-white">{category.averageLabel}</span>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center justify-between text-[11px] text-gray-500 mb-1">
-                                                            <span>총매출 기여도</span>
-                                                            <span>{shareLabel}%</span>
-                                                        </div>
-                                                        <div className="h-1.5 w-full rounded-full bg-slate-800">
-                                                            <div
-                                                                className="h-1.5 rounded-full transition-all duration-500"
-                                                                style={{ width: `${shareWidth}%`, backgroundColor: category.color }}
-                                                            ></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 text-center mb-6 sm:mb-8">
                                     <div className="glass-effect rounded-2xl p-4 sm:p-6 hover:scale-105 transition-all duration-300">
                                         <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 font-semibold">인센티브율 ({employeeType === 'full' ? '정직원' : '파트타임'})</p>
@@ -6724,36 +6972,36 @@
                                     </p>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-xs text-center">
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
-                                            <p className="text-gray-400 mb-1 text-xs">2,500만원 미만</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF6B6B' }}>{employeeType === 'full' ? '4%' : '2%'}</p>
+                                            <p className="text-gray-400 mb-1 text-xs">1,500만원 미만</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#888888' }}>{employeeType === 'full' ? '0%' : '0%'}</p>
+                                        </div>
+                                        <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
+                                            <p className="text-gray-400 mb-1 text-xs">1,500만원 이상</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF6B6B' }}>{employeeType === 'full' ? '2%' : '1%'}</p>
+                                        </div>
+                                        <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
+                                            <p className="text-gray-400 mb-1 text-xs">1,800만원 이상</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF9F40' }}>{employeeType === 'full' ? '3%' : '1.5%'}</p>
+                                        </div>
+                                        <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
+                                            <p className="text-gray-400 mb-1 text-xs">2,200만원 이상</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FFD93D' }}>{employeeType === 'full' ? '4%' : '2%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">2,500만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FF9F40' }}>{employeeType === 'full' ? '5%' : '2.5%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#6BCF7F' }}>{employeeType === 'full' ? '5%' : '2.5%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">3,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#FFD93D' }}>{employeeType === 'full' ? '6%' : '3%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#4ECDC4' }}>{employeeType === 'full' ? '6%' : '3%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">3,500만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#6BCF7F' }}>{employeeType === 'full' ? '7%' : '3.5%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#45B7D1' }}>{employeeType === 'full' ? '7%' : '3.5%'}</p>
                                         </div>
                                         <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
                                             <p className="text-gray-400 mb-1 text-xs">4,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#4ECDC4' }}>{employeeType === 'full' ? '8%' : '4%'}</p>
-                                        </div>
-                                        <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
-                                            <p className="text-gray-400 mb-1 text-xs">4,500만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#45B7D1' }}>{employeeType === 'full' ? '9%' : '4.5%'}</p>
-                                        </div>
-                                        <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
-                                            <p className="text-gray-400 mb-1 text-xs">5,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#5D5FEF' }}>{employeeType === 'full' ? '10%' : '5%'}</p>
-                                        </div>
-                                        <div className="glass-effect rounded-xl p-2 sm:p-3 hover:scale-105 transition-all">
-                                            <p className="text-gray-400 mb-1 text-xs">6,000만원 이상</p>
-                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#A55FEB' }}>{employeeType === 'full' ? '12%' : '6%'}</p>
+                                            <p className="font-bold text-base sm:text-lg" style={{ color: '#5D5FEF' }}>{employeeType === 'full' ? '8%' : '4%'}</p>
                                         </div>
                                     </div>
                                     
