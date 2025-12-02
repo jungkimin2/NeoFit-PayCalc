@@ -115,6 +115,25 @@
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
+        /* 모바일/데스크톱 분리 */
+        .mobile-only {
+            display: flex !important;
+        }
+
+        .desktop-only {
+            display: none !important;
+        }
+
+        @media (min-width: 640px) {
+            .mobile-only {
+                display: none !important;
+            }
+
+            .desktop-only {
+                display: flex !important;
+            }
+        }
+
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -676,7 +695,7 @@
             subscribeToMonthData: (year, month, callback) => {
                 const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
                 const endDate = `${year}-${String(month + 1).padStart(2, '0')}-31`;
-                
+
                 return db.collection('sales')
                     .where('date', '>=', startDate)
                     .where('date', '<=', endDate)
@@ -687,6 +706,32 @@
                         });
                         callback(data);
                     });
+            },
+
+            searchCustomerInAllData: async (customerName) => {
+                try {
+                    const snapshot = await db.collection('sales').get();
+                    const results = [];
+
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        if (data.details && Array.isArray(data.details)) {
+                            data.details.forEach(detail => {
+                                if (detail.customerName && detail.customerName.toLowerCase().includes(customerName.toLowerCase())) {
+                                    results.push({
+                                        ...detail,
+                                        date: doc.id
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    return { success: true, data: results };
+                } catch (error) {
+                    console.error('회원 검색 오류:', error);
+                    return { success: false, error: error.message };
+                }
             }
         };
 
@@ -3316,36 +3361,33 @@
                 }
             };
             
-            // 회원 검색 함수
-            const searchCustomer = () => {
+            // 회원 검색 함수 (전체 데이터 검색)
+            const searchCustomer = async () => {
                 if (!searchQuery.trim()) {
                     alert('검색할 회원명을 입력해주세요.');
                     return;
                 }
-                
-                const results = [];
-                
-                // 모든 날짜의 매출 데이터를 검색
-                Object.entries(salesData).forEach(([dateKey, dayData]) => {
-                    if (dayData.details && Array.isArray(dayData.details)) {
-                        dayData.details.forEach(detail => {
-                            if (detail.customerName && detail.customerName.toLowerCase().includes(searchQuery.toLowerCase())) {
-                                results.push({
-                                    ...detail,
-                                    date: dateKey
-                                });
-                            }
-                        });
+
+                try {
+                    // Firebase에서 전체 데이터 검색
+                    const response = await salesService.searchCustomerInAllData(searchQuery);
+
+                    if (!response.success) {
+                        alert('검색 중 오류가 발생했습니다.');
+                        return;
                     }
-                });
-                
-                if (results.length === 0) {
-                    alert('검색 결과가 없습니다.');
-                    return;
+
+                    if (response.data.length === 0) {
+                        alert('검색 결과가 없습니다.');
+                        return;
+                    }
+
+                    setSearchResults(response.data);
+                    setShowSearchResultModal(true);
+                } catch (error) {
+                    console.error('검색 오류:', error);
+                    alert('검색 중 오류가 발생했습니다.');
                 }
-                
-                setSearchResults(results);
-                setShowSearchResultModal(true);
             };
             
             // 매출 입력 모달 컴포넌트
@@ -6080,7 +6122,16 @@
                         <div className="gradient-border mb-8">
                             <div>
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold flex items-center gap-3">
+                                    {/* 모바일 버전 */}
+                                    <h2 className="mobile-only text-sm font-bold items-center gap-2" style={{ whiteSpace: 'nowrap' }}>
+                                        <div className="p-1 bg-green-500/20 rounded-lg">
+                                            <Icon icon={Calendar} size={20} style={{ color: '#00FF88' }} />
+                                        </div>
+                                        {viewMode === 'daily' ? '일별' : viewMode === 'weekly' ? '주별' : '월별'}
+                                    </h2>
+
+                                    {/* PC 버전 */}
+                                    <h2 className="desktop-only text-xl md:text-2xl font-bold items-center gap-3">
                                         <div className="p-2 bg-green-500/20 rounded-lg">
                                             <Icon icon={Calendar} size={28} style={{ color: '#00FF88' }} />
                                         </div>
@@ -6118,7 +6169,7 @@
                                             </div>
                                             
                                             {/* 정산체크 해제 및 매출 카테고리 버튼들 */}
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                                                 <button
                                                     onClick={() => {
                                                         setCheckedDetails({});
