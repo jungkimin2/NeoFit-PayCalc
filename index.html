@@ -41,28 +41,47 @@
         }
 
         .glow-green {
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.4), 0 0 60px rgba(0, 255, 136, 0.2);
+            box-shadow:
+                0 0 30px rgba(0, 255, 136, 0.4),
+                0 0 60px rgba(0, 255, 136, 0.2),
+                0 0 90px rgba(0, 255, 136, 0.1);
         }
 
         .hover-glow:hover {
-            box-shadow: 0 0 25px rgba(0, 255, 136, 0.5);
+            box-shadow:
+                0 0 30px rgba(0, 255, 136, 0.5),
+                0 0 50px rgba(0, 255, 136, 0.3);
+            transform: translateY(-2px);
         }
 
         .glass-effect {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             position: relative;
             z-index: 1;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .glass-effect:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow:
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
 
         .gradient-border {
             position: relative;
             background: transparent;
-            border: 1px solid #00FF88;
+            border: 1px solid rgba(0, 255, 136, 0.4);
             border-radius: 1.5rem;
+            overflow: hidden;
         }
 
         .gradient-border > div {
@@ -70,22 +89,31 @@
             padding: 2rem;
         }
 
+        .gradient-border.glow-green {
+            box-shadow:
+                inset 0 0 30px rgba(0, 255, 136, 0.1),
+                0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 10px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #1f2937;
-            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(to bottom, #00FF88, #00C66E);
-            border-radius: 4px;
+            background: linear-gradient(to bottom, rgba(0, 255, 136, 0.4), rgba(0, 198, 110, 0.4));
+            border-radius: 5px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(to bottom, #00FF88, #00FF88);
+            background: linear-gradient(to bottom, rgba(0, 255, 136, 0.6), rgba(0, 198, 110, 0.6));
+            background-clip: padding-box;
         }
         
         .custom-scrollbar::-webkit-scrollbar {
@@ -113,6 +141,194 @@
 
         .pulse-animation {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* ===== 고급 애니메이션 추가 ===== */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes progressFill {
+            from { width: 0%; }
+            to { width: var(--progress-width, 100%); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-15px) scale(1.02); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 136, 0.5), 0 0 60px rgba(0, 255, 136, 0.3); }
+        }
+
+        .slide-up {
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        .shimmer-effect {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        .count-up {
+            animation: countUp 0.6s ease-out;
+        }
+
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .glow-animation {
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        /* ===== 3D 카드 효과 ===== */
+        .card-3d {
+            transform-style: preserve-3d;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-3d:hover {
+            transform: translateY(-8px) rotateX(2deg);
+            box-shadow:
+                0 25px 50px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        /* ===== 강화된 Glass Morphism ===== */
+        .glass-premium {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow:
+                0 8px 32px 0 rgba(0, 0, 0, 0.37),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* ===== 프로그레스 바 ===== */
+        .progress-bar {
+            position: relative;
+            height: 6px;
+            background: rgba(31, 41, 55, 0.8);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            animation: progressFill 1.5s ease-out forwards;
+        }
+
+        /* ===== 버튼 리플 효과 ===== */
+        .btn-ripple {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-ripple::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-ripple:active::after {
+            width: 300px;
+            height: 300px;
+            transition: width 0s, height 0s;
+        }
+
+        /* ===== 그라디언트 텍스트 ===== */
+        .gradient-text-green {
+            background: linear-gradient(135deg, #00FF88, #00C66E, #00FF88);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient 3s ease infinite;
+        }
+
+        .gradient-text-blue {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6, #60a5fa);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gradient-text-gold {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @keyframes gradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* ===== 호버 효과 강화 ===== */
+        .hover-lift {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ===== 아이콘 컨테이너 ===== */
+        .icon-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .icon-container:hover {
+            transform: scale(1.1);
+        }
+
+        /* ===== 네온 보더 ===== */
+        .neon-border-green {
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            box-shadow:
+                0 0 10px rgba(0, 255, 136, 0.1),
+                inset 0 0 10px rgba(0, 255, 136, 0.05);
+        }
+
+        .neon-border-green:hover {
+            border-color: rgba(0, 255, 136, 0.5);
+            box-shadow:
+                0 0 20px rgba(0, 255, 136, 0.2),
+                inset 0 0 20px rgba(0, 255, 136, 0.1);
         }
 
         /* 모바일/데스크톱 분리 */
@@ -260,8 +476,12 @@
 
         /* Tailwind-like utility classes */
         .min-h-screen { min-height: 100vh; }
-        .bg-gradient-to-br { 
-            background: #0a0e1a;
+        .bg-gradient-to-br {
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(0, 255, 136, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0e1a 0%, #111827 50%, #0a0e1a 100%);
             background-attachment: fixed;
         }
         .text-gray-100 { color: #f3f4f6; }
