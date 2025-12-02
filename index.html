@@ -3076,7 +3076,8 @@
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
                             ctx.shadowBlur = 0;
-                            ctx.fillText('총매출', centerX, centerY - 30);
+                            const monthText = `${selectedMonth + 1}월`;
+                            ctx.fillText(`${monthText} 총 매출`, centerX, centerY - 30);
 
                             // 금액 텍스트 (크게, 주황 네온 효과 - 부드럽게)
                             ctx.font = 'bold 32px Pretendard, sans-serif';
