@@ -1459,7 +1459,20 @@
             const [showOtherModal, setShowOtherModal] = useState(false);
             const [showDetailModal, setShowDetailModal] = useState(false);
             const [selectedDetailEntry, setSelectedDetailEntry] = useState(null);
-            
+
+            // 모바일 일별 상세 모달 상태
+            const [mobileExpandedDay, setMobileExpandedDay] = useState(null);
+            const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+            // 모바일 감지 이벤트
+            React.useEffect(() => {
+                const handleResize = () => {
+                    setIsMobile(window.innerWidth < 640);
+                };
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
+
             // Firebase 인증 상태
             const [user, setUser] = useState(null);
             const [isLoading, setIsLoading] = useState(true);
@@ -6565,14 +6578,115 @@
                                 
                                 {/* 일별 뷰 */}
                                 {viewMode === 'daily' && (
-                                    <div ref={dailyViewRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4 max-h-[650px] overflow-y-auto p-2" style={{display: 'grid', gridTemplateColumns: window.innerWidth < 640 ? 'repeat(1, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))'}}>
+                                    <>
+                                    {/* 모바일 컴팩트 그리드 뷰 */}
+                                    {isMobile ? (
+                                        <div ref={dailyViewRef} className="max-h-[650px] overflow-y-auto p-2">
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                                {Array.from({ length: getDaysInMonth() }, (_, i) => i + 1).map(day => {
+                                                    const dateKey = getDateKey(day);
+                                                    const dayData = normalizeSalesEntry(salesData[dateKey]);
+                                                    const date = new Date(selectedYear, selectedMonth, day);
+                                                    const dayName = date.toLocaleDateString('ko-KR', { weekday: 'short' });
+                                                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                                                    const dayAmount = normalizeAmount(dayData.amount);
+                                                    const detailCount = dayData.details?.length || 0;
+
+                                                    return (
+                                                        <div
+                                                            key={day}
+                                                            id={`day-${day}`}
+                                                            onClick={() => setMobileExpandedDay(day)}
+                                                            className="cursor-pointer transition-all duration-200 active:scale-95"
+                                                            style={{
+                                                                background: dayData.approved
+                                                                    ? 'linear-gradient(145deg, rgba(0,255,136,0.15), rgba(0,200,255,0.08))'
+                                                                    : dayAmount > 0
+                                                                        ? 'linear-gradient(145deg, rgba(59,130,246,0.15), rgba(139,92,246,0.08))'
+                                                                        : 'rgba(30, 41, 59, 0.6)',
+                                                                borderRadius: '12px',
+                                                                padding: '10px 8px',
+                                                                border: dayData.approved
+                                                                    ? '1px solid rgba(0,255,136,0.3)'
+                                                                    : isWeekend
+                                                                        ? '1px solid rgba(236,72,153,0.3)'
+                                                                        : '1px solid rgba(75,85,99,0.3)',
+                                                                minHeight: '85px',
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                justifyContent: 'space-between'
+                                                            }}
+                                                        >
+                                                            {/* 날짜 헤더 */}
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                                                <span style={{
+                                                                    fontSize: '13px',
+                                                                    fontWeight: '700',
+                                                                    color: isWeekend ? '#f472b6' : '#fff'
+                                                                }}>
+                                                                    {day}일
+                                                                </span>
+                                                                <span style={{
+                                                                    fontSize: '10px',
+                                                                    padding: '2px 5px',
+                                                                    borderRadius: '6px',
+                                                                    backgroundColor: isWeekend ? 'rgba(236,72,153,0.2)' : 'rgba(75,85,99,0.4)',
+                                                                    color: isWeekend ? '#f472b6' : '#9ca3af'
+                                                                }}>
+                                                                    {dayName}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* 금액 */}
+                                                            <div style={{
+                                                                fontSize: dayAmount >= 1000000 ? '11px' : '13px',
+                                                                fontWeight: '800',
+                                                                color: dayAmount > 0 ? '#00FF88' : '#6b7280',
+                                                                textAlign: 'center',
+                                                                marginBottom: '4px',
+                                                                lineHeight: '1.2'
+                                                            }}>
+                                                                {dayAmount > 0 ? (
+                                                                    dayAmount >= 10000
+                                                                        ? `${Math.floor(dayAmount / 10000)}만${dayAmount % 10000 > 0 ? Math.floor((dayAmount % 10000) / 1000) + '천' : ''}`
+                                                                        : dayAmount.toLocaleString() + '원'
+                                                                ) : '-'}
+                                                            </div>
+
+                                                            {/* 매출 건수 */}
+                                                            <div style={{
+                                                                fontSize: '10px',
+                                                                color: '#9ca3af',
+                                                                textAlign: 'center',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: '3px'
+                                                            }}>
+                                                                {detailCount > 0 ? (
+                                                                    <>
+                                                                        <span style={{ color: '#00C6FF' }}>{detailCount}건</span>
+                                                                        {dayData.approved && <Icon icon={Check} size={12} style={{ color: '#00FF88' }} />}
+                                                                    </>
+                                                                ) : (
+                                                                    <span>-</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                    /* 데스크탑 기존 뷰 */
+                                    <div ref={dailyViewRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4 max-h-[650px] overflow-y-auto p-2" style={{display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'}}>
                                         {Array.from({ length: getDaysInMonth() }, (_, i) => i + 1).map(day => {
                                         const dateKey = getDateKey(day);
                                         const dayData = normalizeSalesEntry(salesData[dateKey]);
                                         const date = new Date(selectedYear, selectedMonth, day);
                                         const dayName = date.toLocaleDateString('ko-KR', { weekday: 'short' });
                                         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                                        
+
                                         const dayAmount = normalizeAmount(dayData.amount);
 
                                         return (
@@ -6941,8 +7055,360 @@
                                         );
                                         })}
                                     </div>
+                                    )}
+
+                                    {/* 모바일 일별 상세 모달 */}
+                                    {mobileExpandedDay && isMobile && (() => {
+                                        const day = mobileExpandedDay;
+                                        const dateKey = getDateKey(day);
+                                        const dayData = normalizeSalesEntry(salesData[dateKey]);
+                                        const date = new Date(selectedYear, selectedMonth, day);
+                                        const dayName = date.toLocaleDateString('ko-KR', { weekday: 'short' });
+                                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                                        const dayAmount = normalizeAmount(dayData.amount);
+
+                                        return (
+                                            <div
+                                                className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center z-50"
+                                                onClick={() => setMobileExpandedDay(null)}
+                                            >
+                                                <div
+                                                    className="w-full max-h-[85vh] overflow-y-auto rounded-t-3xl slide-in"
+                                                    style={{
+                                                        backgroundColor: 'rgba(17, 24, 39, 0.98)',
+                                                        borderTop: '1px solid rgba(0,255,136,0.3)'
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    {/* 모달 핸들 */}
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        justifyContent: 'center',
+                                                        padding: '12px 0 8px'
+                                                    }}>
+                                                        <div style={{
+                                                            width: '40px',
+                                                            height: '4px',
+                                                            backgroundColor: '#4b5563',
+                                                            borderRadius: '2px'
+                                                        }}></div>
+                                                    </div>
+
+                                                    {/* 모달 헤더 */}
+                                                    <div style={{
+                                                        padding: '0 20px 16px',
+                                                        borderBottom: '1px solid rgba(75,85,99,0.3)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between'
+                                                    }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                            <span style={{
+                                                                fontSize: '20px',
+                                                                fontWeight: '700',
+                                                                color: isWeekend ? '#f472b6' : '#fff'
+                                                            }}>
+                                                                {selectedMonth + 1}월 {day}일
+                                                            </span>
+                                                            <span style={{
+                                                                fontSize: '14px',
+                                                                padding: '4px 10px',
+                                                                borderRadius: '8px',
+                                                                backgroundColor: isWeekend ? 'rgba(236,72,153,0.2)' : 'rgba(75,85,99,0.4)',
+                                                                color: isWeekend ? '#f472b6' : '#9ca3af'
+                                                            }}>
+                                                                {dayName}
+                                                            </span>
+                                                            {dayData.approved && (
+                                                                <Icon icon={Check} size={20} style={{ color: '#00FF88' }} />
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setMobileExpandedDay(null)}
+                                                            style={{
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                borderRadius: '8px',
+                                                                backgroundColor: 'rgba(75,85,99,0.4)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                border: 'none',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            <Icon icon={X} size={18} style={{ color: '#9ca3af' }} />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* 총 매출 금액 */}
+                                                    <div style={{
+                                                        padding: '20px',
+                                                        background: dayAmount > 0
+                                                            ? 'linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,200,255,0.05))'
+                                                            : 'rgba(30,41,59,0.5)',
+                                                        margin: '16px',
+                                                        borderRadius: '16px'
+                                                    }}>
+                                                        <div style={{
+                                                            fontSize: '32px',
+                                                            fontWeight: '800',
+                                                            color: dayAmount > 0 ? '#00FF88' : '#6b7280',
+                                                            textAlign: 'center',
+                                                            marginBottom: '8px'
+                                                        }}>
+                                                            {dayAmount.toLocaleString()}원
+                                                        </div>
+                                                        <div style={{
+                                                            fontSize: '14px',
+                                                            color: '#9ca3af',
+                                                            textAlign: 'center',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '6px'
+                                                        }}>
+                                                            <Icon icon={Package} size={16} />
+                                                            {dayData.details?.length || 0}건의 매출
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 매출 상세 내역 */}
+                                                    {dayData.details && dayData.details.length > 0 && (
+                                                        <div style={{ padding: '0 16px 16px' }}>
+                                                            <div style={{
+                                                                fontSize: '14px',
+                                                                fontWeight: '600',
+                                                                color: '#d1d5db',
+                                                                marginBottom: '12px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '8px'
+                                                            }}>
+                                                                <Icon icon={DollarSign} size={16} />
+                                                                매출 내역 ({dayData.details.length}건)
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                                {dayData.details.map((detail, index) => {
+                                                                    const detailAmount = normalizeAmount(detail.price);
+                                                                    return (
+                                                                        <div
+                                                                            key={detail.id}
+                                                                            style={{
+                                                                                backgroundColor: 'rgba(30,41,59,0.6)',
+                                                                                borderRadius: '12px',
+                                                                                padding: '14px',
+                                                                                border: '1px solid rgba(75,85,99,0.3)'
+                                                                            }}
+                                                                            onClick={() => openSaleDetail(day, dateKey, detail, dayData)}
+                                                                        >
+                                                                            <div style={{
+                                                                                display: 'flex',
+                                                                                justifyContent: 'space-between',
+                                                                                alignItems: 'flex-start',
+                                                                                marginBottom: '8px'
+                                                                            }}>
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                                    <div style={{
+                                                                                        width: '28px',
+                                                                                        height: '28px',
+                                                                                        borderRadius: '50%',
+                                                                                        backgroundColor: 'rgba(0,255,136,0.2)',
+                                                                                        display: 'flex',
+                                                                                        alignItems: 'center',
+                                                                                        justifyContent: 'center'
+                                                                                    }}>
+                                                                                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#00FF88' }}>{index + 1}</span>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>
+                                                                                            {detail.customerName}
+                                                                                        </div>
+                                                                                        <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                                                                                            {detail.timestamp}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div style={{
+                                                                                    fontSize: '16px',
+                                                                                    fontWeight: '700',
+                                                                                    color: getPriceColor(detailAmount)
+                                                                                }}>
+                                                                                    {detailAmount.toLocaleString()}원
+                                                                                </div>
+                                                                            </div>
+                                                                            <div style={{
+                                                                                backgroundColor: 'rgba(0,0,0,0.3)',
+                                                                                borderRadius: '8px',
+                                                                                padding: '8px 12px',
+                                                                                fontSize: '12px',
+                                                                                color: '#9ca3af'
+                                                                            }}>
+                                                                                {detail.product}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* 매출이 없을 때 */}
+                                                    {(!dayData.details || dayData.details.length === 0) && dayAmount === 0 && (
+                                                        <div style={{
+                                                            textAlign: 'center',
+                                                            padding: '40px 20px',
+                                                            color: '#6b7280'
+                                                        }}>
+                                                            <Icon icon={DollarSign} size={32} style={{ marginBottom: '12px', opacity: 0.3 }} />
+                                                            <div>등록된 매출이 없습니다</div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* 하단 버튼들 */}
+                                                    <div style={{ padding: '16px', paddingBottom: '32px' }}>
+                                                        {!dayData.approved ? (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setMobileExpandedDay(null);
+                                                                        openAddSaleModal(day);
+                                                                    }}
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        padding: '14px',
+                                                                        borderRadius: '12px',
+                                                                        border: 'none',
+                                                                        backgroundColor: 'rgba(0,198,255,0.2)',
+                                                                        color: '#00C6FF',
+                                                                        fontSize: '15px',
+                                                                        fontWeight: '600',
+                                                                        cursor: 'pointer',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        gap: '8px'
+                                                                    }}
+                                                                >
+                                                                    <Icon icon={Plus} size={18} />
+                                                                    매출 입력
+                                                                </button>
+                                                                <div style={{ display: 'flex', gap: '10px' }}>
+                                                                    <input
+                                                                        type="password"
+                                                                        value={approvalPasswords[dateKey] || ''}
+                                                                        onChange={(e) => {
+                                                                            setApprovalPasswords(prev => ({
+                                                                                ...prev,
+                                                                                [dateKey]: e.target.value
+                                                                            }));
+                                                                        }}
+                                                                        placeholder="비밀번호"
+                                                                        style={{
+                                                                            flex: 1,
+                                                                            padding: '14px',
+                                                                            borderRadius: '12px',
+                                                                            border: '1px solid rgba(75,85,99,0.4)',
+                                                                            backgroundColor: 'rgba(30,41,59,0.6)',
+                                                                            color: '#fff',
+                                                                            fontSize: '15px',
+                                                                            textAlign: 'center'
+                                                                        }}
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            handleAdminApproval(day);
+                                                                            setMobileExpandedDay(null);
+                                                                        }}
+                                                                        style={{
+                                                                            padding: '14px 24px',
+                                                                            borderRadius: '12px',
+                                                                            border: 'none',
+                                                                            backgroundColor: 'rgba(59,130,246,0.3)',
+                                                                            color: '#60a5fa',
+                                                                            fontSize: '15px',
+                                                                            fontWeight: '600',
+                                                                            cursor: 'pointer'
+                                                                        }}
+                                                                    >
+                                                                        승인
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                                <div style={{
+                                                                    width: '100%',
+                                                                    padding: '14px',
+                                                                    borderRadius: '12px',
+                                                                    backgroundColor: 'rgba(0,255,136,0.15)',
+                                                                    color: '#00FF88',
+                                                                    fontSize: '15px',
+                                                                    fontWeight: '600',
+                                                                    textAlign: 'center',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    gap: '8px'
+                                                                }}>
+                                                                    <Icon icon={Check} size={18} />
+                                                                    정산완료
+                                                                </div>
+                                                                <div style={{ display: 'flex', gap: '10px' }}>
+                                                                    <input
+                                                                        type="password"
+                                                                        value={editPasswords[dateKey] || ''}
+                                                                        onChange={(e) => {
+                                                                            setEditPasswords(prev => ({
+                                                                                ...prev,
+                                                                                [dateKey]: e.target.value
+                                                                            }));
+                                                                        }}
+                                                                        placeholder="비밀번호"
+                                                                        style={{
+                                                                            flex: 1,
+                                                                            padding: '14px',
+                                                                            borderRadius: '12px',
+                                                                            border: '1px solid rgba(75,85,99,0.4)',
+                                                                            backgroundColor: 'rgba(30,41,59,0.6)',
+                                                                            color: '#fff',
+                                                                            fontSize: '15px',
+                                                                            textAlign: 'center'
+                                                                        }}
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            handleEditMode(day);
+                                                                            setMobileExpandedDay(null);
+                                                                        }}
+                                                                        style={{
+                                                                            padding: '14px 24px',
+                                                                            borderRadius: '12px',
+                                                                            border: 'none',
+                                                                            backgroundColor: 'rgba(251,146,60,0.3)',
+                                                                            color: '#fb923c',
+                                                                            fontSize: '15px',
+                                                                            fontWeight: '600',
+                                                                            cursor: 'pointer',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '6px'
+                                                                        }}
+                                                                    >
+                                                                        <Icon icon={Edit} size={16} />
+                                                                        수정
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                    </>
                                 )}
-                                
+
                                 {/* 주별 뷰 */}
                                 {viewMode === 'weekly' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
