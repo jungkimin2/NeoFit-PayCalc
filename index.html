@@ -2159,12 +2159,12 @@
                 '12개월 (144회 주 3회)'
             ];
             const neofitProducts = [
+                '네오핏 12회 단독 상품',
                 '네오 싱크 1:1 5회권',
                 '네오 싱크 2:1 5회권',
-                '네오핏 12회 단독 상품',
                 '30일 기간권',
-                '180일 기간권',
                 '90일 기간권',
+                '180일 기간권',
                 '8회 주 2회',
                 '24회 주 2회',
                 '48회 주 2회',
@@ -4139,10 +4139,13 @@
                                         <option value={neofitProducts[1]}>
                                             {neofitProducts[1]} - {productPrices[neofitProducts[1]].toLocaleString()}원
                                         </option>
+                                        <option value={neofitProducts[2]}>
+                                            {neofitProducts[2]} - {productPrices[neofitProducts[2]].toLocaleString()}원
+                                        </option>
                                         <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
                                             ─────── 네오핏 무제한권 ───────
                                         </option>
-                                        {neofitProducts.slice(2, 5).map(product => (
+                                        {neofitProducts.slice(3, 6).map(product => (
                                             <option key={product} value={product}>
                                                 {product} - {productPrices[product].toLocaleString()}원
                                             </option>
@@ -4150,7 +4153,7 @@
                                         <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
                                             ─────── 네오핏 주 2회 ───────
                                         </option>
-                                        {neofitProducts.slice(5, 8).map(product => (
+                                        {neofitProducts.slice(6, 9).map(product => (
                                             <option key={product} value={product}>
                                                 {product} - {productPrices[product].toLocaleString()}원
                                             </option>
@@ -4158,7 +4161,7 @@
                                         <option disabled style={{color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)'}}>
                                             ─────── 네오핏 주 3회 ───────
                                         </option>
-                                        {neofitProducts.slice(8, 11).map(product => (
+                                        {neofitProducts.slice(9, 12).map(product => (
                                             <option key={product} value={product}>
                                                 {product} - {productPrices[product].toLocaleString()}원
                                             </option>
