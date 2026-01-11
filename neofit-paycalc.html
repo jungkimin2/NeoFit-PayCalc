@@ -1341,7 +1341,8 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            align-items: flex-end;
+            align-items: stretch;
+            width: 100%;
         }
 
         .category-card {
@@ -1359,7 +1360,9 @@
             .chart-wrapper {
                 width: 100%;
                 display: flex;
+                flex-direction: column;
                 justify-content: center;
+                align-items: center;
             }
 
             .chart-canvas-wrapper {
@@ -1378,26 +1381,38 @@
                 max-width: 100%;
             }
 
-            /* 커스텀 범례 그리드 */
+            .active-mobile-hide {
+                display: none !important;
+            }
+
+            /* 커스텀 범례 스타일 (박스 제거, 텍스트 리스트화) */
             .custom-legend-container {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
                 gap: 12px 16px;
-                padding: 20px;
-                background: rgba(255, 255, 255, 0.03);
-                border-radius: 16px;
-                border: 1px solid rgba(255, 255, 255, 0.05);
-                margin-top: 10px;
-                margin-bottom: 20px;
+                padding: 10px 0;
+                background: transparent;
+                border: none;
+                margin-top: 20px;
+                margin-bottom: 30px;
+                width: 100%;
+                justify-items: center;
             }
 
             .legend-item {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 600;
                 white-space: nowrap;
+                color: #e5e7eb;
+            }
+
+            .legend-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
             }
         }
 
@@ -8374,15 +8389,15 @@
                                             {/* 모바일용 커스텀 범례 정렬 */}
                                             <div className="custom-legend-container">
                                                 {categorySnapshots.map((cat) => (
-                                                    <div key={cat.key} className="legend-item" style={{ color: cat.color }}>
-                                                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: cat.color }}></div>
+                                                    <div key={cat.key} className="legend-item">
+                                                        <div className="legend-dot" style={{ background: cat.color }}></div>
                                                         <span>{cat.icon} {cat.label}: {cat.share.toFixed(1)}%</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                         {/* 우측: 카테고리 카드 1열 (우측 정렬) */}
-                                        <div className="category-cards-wrapper">
+                                        <div className="category-cards-wrapper active-mobile-hide">
                                             {categorySnapshots.map((category) => {
                                                 const shareValue = Number.isFinite(category.share) ? category.share : 0;
                                                 const shareLabel = shareValue.toFixed(1);
