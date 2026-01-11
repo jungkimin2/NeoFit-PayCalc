@@ -1398,8 +1398,7 @@
                 width: 100%;
                 justify-items: start;
                 padding-left: 0;
-                margin-left: -15px;
-                /* 좌측으로 조금 더 이동 */
+                margin-left: -25px;
             }
 
             .legend-item {
@@ -4014,15 +4013,15 @@
                             ctx.shadowBlur = 0;
                             ctx.fillText(monthText, centerX, centerY - (isMobileView ? 20 : 25));
 
-                            // 2. 금액 텍스트 (주황색) - 더 크게 키워 시인성 극대화
-                            let amountFontSize = isMobileView ? 36 : 32;
+                            // 2. 금액 텍스트 (주황색) - 더 크게 키워 시인성 극대화 (40px)
+                            let amountFontSize = isMobileView ? 40 : 32;
                             ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
 
                             let textWidth = ctx.measureText(totalText).width;
                             if (textWidth > maxTextWidth) {
                                 // 가용 너비에 꽉 차게 비례 축소 (최소 14px 보장)
                                 const scaleFactor = maxTextWidth / textWidth;
-                                amountFontSize = Math.max(14, Math.floor(amountFontSize * scaleFactor));
+                                amountFontSize = Math.max(16, Math.floor(amountFontSize * scaleFactor));
                                 ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
                             }
 
@@ -4059,7 +4058,7 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: true,
-                        cutout: '65%',
+                        cutout: '72%',
                         plugins: {
                             legend: {
                                 display: false,
@@ -4120,7 +4119,7 @@
                         window.categoryPieChartInstance = null;
                     }
                 };
-            }, [JSON.stringify(categorySnapshots.map(c => ({ key: c.key, total: c.total })))]);
+            }, [selectedYear, selectedMonth, JSON.stringify(categorySnapshots.map(c => ({ key: c.key, total: c.total })))]);
 
             // SVG 아이콘 컴포넌트
             const Icon = ({ icon: iconName, size = 24, style = {}, className = "" }) => {
