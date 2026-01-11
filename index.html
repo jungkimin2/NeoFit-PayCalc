@@ -3950,18 +3950,18 @@
                             const centerX = (left + right) / 2;
                             const centerY = (top + bottom) / 2;
 
-                            // 차트의 안쪽 반지름(innerRadius)을 기준으로 가용 너비 계산 (좌우 여백 10% 제외)
+                            // 차트의 안쪽 반지름(innerRadius)을 기준으로 가용 너비 계산
                             const innerRadius = chart.innerRadius || 0;
-                            const maxTextWidth = innerRadius * 1.8; // 지름의 약 90%
 
                             const isMobileView = window.innerWidth < 768;
+                            // 모바일에서는 원 안의 여백을 더 넉넉히 주어 텍스트가 닿지 않게 함 (1.5 vs 1.8)
+                            const maxTextWidth = isMobileView ? innerRadius * 1.5 : innerRadius * 1.8;
 
-                            // 1. 라벨 텍스트 (XX월 총 매출) - 동적으로 크기 조절
-                            let labelFontSize = isMobileView ? 11 : 16;
+                            // 1. 라벨 텍스트 (XX월 총 매출)
+                            let labelFontSize = isMobileView ? 10 : 16;
                             ctx.font = `bold ${labelFontSize}px Pretendard, sans-serif`;
                             const monthText = `${selectedMonth + 1}월 총 매출`;
 
-                            // 너무 길면 줄이기
                             let labelWidth = ctx.measureText(monthText).width;
                             if (labelWidth > maxTextWidth) {
                                 labelFontSize = Math.floor(labelFontSize * (maxTextWidth / labelWidth));
@@ -3972,24 +3972,27 @@
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
                             ctx.shadowBlur = 0;
-                            ctx.fillText(monthText, centerX, centerY - (isMobileView ? 15 : 25));
+                            ctx.fillText(monthText, centerX, centerY - (isMobileView ? (labelFontSize > 10 ? 15 : 12) : 25));
 
-                            // 2. 금액 텍스트 - 동적으로 크기 조절
-                            let amountFontSize = isMobileView ? 18 : 32;
+                            // 2. 금액 텍스트 - 긴 숫자(천만 단위 이상) 대응
+                            let amountFontSize = isMobileView ? 17 : 32;
                             ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
 
-                            // 텍스트 너비 측정 후 가용 너비를 넘으면 폰트 크기 축소
                             let textWidth = ctx.measureText(totalText).width;
                             if (textWidth > maxTextWidth) {
-                                amountFontSize = Math.floor(amountFontSize * (maxTextWidth / textWidth));
+                                // 가용 너비에 맞춰 폰트 크기를 비례적으로 축소 (최소 10px 보장)
+                                const scaleFactor = maxTextWidth / textWidth;
+                                amountFontSize = Math.max(10, Math.floor(amountFontSize * scaleFactor));
                                 ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
                             }
 
                             ctx.fillStyle = '#FF6B35';
                             ctx.shadowColor = 'rgba(255, 107, 53, 0.6)';
-                            ctx.shadowBlur = isMobileView ? 5 : 15;
+                            ctx.shadowBlur = isMobileView ? 4 : 15;
 
-                            ctx.fillText(totalText, centerX, centerY + (isMobileView ? 10 : 12));
+                            // 폰트 크기에 따라 상하 간격 미세 조정
+                            const yOffset = isMobileView ? (amountFontSize > 15 ? 10 : 8) : 12;
+                            ctx.fillText(totalText, centerX, centerY + yOffset);
                         } catch (error) {
                             console.error('Center text plugin error:', error);
                         }
