@@ -1398,7 +1398,8 @@
                 width: 100%;
                 justify-items: start;
                 padding-left: 0;
-                /* 좌측 끝으로 최대한 밀착 */
+                margin-left: -15px;
+                /* 좌측으로 조금 더 이동 */
             }
 
             .legend-item {
@@ -4013,8 +4014,8 @@
                             ctx.shadowBlur = 0;
                             ctx.fillText(monthText, centerX, centerY - (isMobileView ? 20 : 25));
 
-                            // 2. 금액 텍스트 (주황색) - 기본 크기를 더 키워 시인성 확보
-                            let amountFontSize = isMobileView ? 30 : 32;
+                            // 2. 금액 텍스트 (주황색) - 더 크게 키워 시인성 극대화
+                            let amountFontSize = isMobileView ? 36 : 32;
                             ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
 
                             let textWidth = ctx.measureText(totalText).width;
