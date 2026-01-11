@@ -1369,13 +1369,16 @@
 
             .category-cards-wrapper {
                 width: 100%;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
                 align-items: stretch;
-                gap: 8px;
             }
 
             .category-card {
                 width: 100%;
                 max-width: 100%;
+                padding: 10px !important;
             }
         }
 
@@ -4022,7 +4025,7 @@
                         cutout: '65%',
                         plugins: {
                             legend: {
-                                display: true,
+                                display: false,
                                 position: 'bottom',
                                 labels: {
                                     font: {
