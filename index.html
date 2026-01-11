@@ -1397,8 +1397,8 @@
                 margin-bottom: 30px;
                 width: 100%;
                 justify-items: start;
-                padding-left: 5px;
-                /* 균형을 위한 최소한의 여백만 유지 */
+                padding-left: 0;
+                /* 좌측 끝으로 최대한 밀착 */
             }
 
             .legend-item {
@@ -4014,7 +4014,7 @@
                             ctx.fillText(monthText, centerX, centerY - (isMobileView ? 20 : 25));
 
                             // 2. 금액 텍스트 (주황색) - 기본 크기를 더 키워 시인성 확보
-                            let amountFontSize = isMobileView ? 26 : 32;
+                            let amountFontSize = isMobileView ? 30 : 32;
                             ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
 
                             let textWidth = ctx.measureText(totalText).width;
