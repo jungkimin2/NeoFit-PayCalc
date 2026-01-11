@@ -8391,7 +8391,7 @@
                                             {/* 모바일용 커스텀 범례 정렬 */}
                                             <div className="custom-legend-container">
                                                 {categorySnapshots.map((cat) => (
-                                                    <div key={cat.key} className="legend-item">
+                                                    <div key={cat.key} className="legend-item" style={{ color: cat.color }}>
                                                         <div className="legend-dot" style={{ background: cat.color }}></div>
                                                         <span>{cat.icon} {cat.label}: {cat.share.toFixed(1)}%</span>
                                                     </div>
