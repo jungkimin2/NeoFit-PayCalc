@@ -3954,11 +3954,11 @@
                             const innerRadius = chart.innerRadius || 0;
 
                             const isMobileView = window.innerWidth < 768;
-                            // 모바일에서는 원 안의 여백을 더 넉넉히 주어 텍스트가 닿지 않게 함 (1.5 vs 1.8)
-                            const maxTextWidth = isMobileView ? innerRadius * 1.5 : innerRadius * 1.8;
+                            // 모바일에서도 가능한 한 크게 보이도록 조절 (1.5 -> 1.75로 확장)
+                            const maxTextWidth = isMobileView ? innerRadius * 1.75 : innerRadius * 1.8;
 
                             // 1. 라벨 텍스트 (XX월 총 매출)
-                            let labelFontSize = isMobileView ? 10 : 16;
+                            let labelFontSize = isMobileView ? 12 : 16;
                             ctx.font = `bold ${labelFontSize}px Pretendard, sans-serif`;
                             const monthText = `${selectedMonth + 1}월 총 매출`;
 
@@ -3972,26 +3972,26 @@
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
                             ctx.shadowBlur = 0;
-                            ctx.fillText(monthText, centerX, centerY - (isMobileView ? (labelFontSize > 10 ? 15 : 12) : 25));
+                            ctx.fillText(monthText, centerX, centerY - (isMobileView ? (labelFontSize > 12 ? 18 : 15) : 25));
 
-                            // 2. 금액 텍스트 - 긴 숫자(천만 단위 이상) 대응
-                            let amountFontSize = isMobileView ? 17 : 32;
+                            // 2. 금액 텍스트 - 기본 크기를 키우고 동적 축소 적용
+                            let amountFontSize = isMobileView ? 22 : 32;
                             ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
 
                             let textWidth = ctx.measureText(totalText).width;
                             if (textWidth > maxTextWidth) {
-                                // 가용 너비에 맞춰 폰트 크기를 비례적으로 축소 (최소 10px 보장)
+                                // 가용 너비에 맞춰 폰트 크기를 비례적으로 축소 (최소 12px 보장)
                                 const scaleFactor = maxTextWidth / textWidth;
-                                amountFontSize = Math.max(10, Math.floor(amountFontSize * scaleFactor));
+                                amountFontSize = Math.max(12, Math.floor(amountFontSize * scaleFactor));
                                 ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
                             }
 
                             ctx.fillStyle = '#FF6B35';
                             ctx.shadowColor = 'rgba(255, 107, 53, 0.6)';
-                            ctx.shadowBlur = isMobileView ? 4 : 15;
+                            ctx.shadowBlur = isMobileView ? 6 : 15;
 
                             // 폰트 크기에 따라 상하 간격 미세 조정
-                            const yOffset = isMobileView ? (amountFontSize > 15 ? 10 : 8) : 12;
+                            const yOffset = isMobileView ? (amountFontSize > 18 ? 12 : 10) : 12;
                             ctx.fillText(totalText, centerX, centerY + yOffset);
                         } catch (error) {
                             console.error('Center text plugin error:', error);
