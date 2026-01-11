@@ -92,29 +92,57 @@ export const subscribeToSalesData = (startDate, endDate, callback) => {
   return unsubscribe;
 };
 
+// 회원명으로 전체 데이터 검색
+export const searchCustomerInAllData = async (customerName) => {
+  try {
+    const salesRef = collection(db, 'sales');
+    const querySnapshot = await getDocs(salesRef);
+    const results = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.details && Array.isArray(data.details)) {
+        data.details.forEach(detail => {
+          if (detail.customerName && detail.customerName.toLowerCase().includes(customerName.toLowerCase())) {
+            results.push({
+              ...detail,
+              date: doc.id
+            });
+          }
+        });
+      }
+    });
+
+    return { success: true, data: results };
+  } catch (error) {
+    console.error('회원 검색 오류:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // localStorage 데이터를 Firebase로 마이그레이션
 export const migrateFromLocalStorage = async () => {
   try {
     const migrationResults = [];
-    
+
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      
+
       if (key && key.includes('salesData_')) {
         const dateKey = key.replace('salesData_', '');
         const localData = JSON.parse(localStorage.getItem(key));
-        
+
         const result = await saveSalesData(dateKey, {
           ...localData,
           date: dateKey,
           createdAt: serverTimestamp(),
           migrated: true
         });
-        
+
         migrationResults.push({ key: dateKey, ...result });
       }
     }
-    
+
     return { success: true, results: migrationResults };
   } catch (error) {
     console.error('마이그레이션 오류:', error);

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Firebase Test</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const App = () => {
+            const [loading, setLoading] = React.useState(true);
+            const [error, setError] = React.useState(null);
+            
+            React.useEffect(() => {
+                try {
+                    // Firebase 설정
+                    const firebaseConfig = {
+                        apiKey: "AIzaSyA7QFT8mJtSAe4T5dl6xIcNpN-8KiF1WJ0",
+                        authDomain: "neofit-paycalc.firebaseapp.com",
+                        projectId: "neofit-paycalc",
+                        storageBucket: "neofit-paycalc.firebasestorage.app",
+                        messagingSenderId: "482350739592",
+                        appId: "1:482350739592:web:35ef96eb8deebf8e0bb57f"
+                    };
+                    
+                    // Firebase 초기화
+                    firebase.initializeApp(firebaseConfig);
+                    console.log('Firebase initialized');
+                    
+                    setLoading(false);
+                } catch (err) {
+                    console.error('Firebase error:', err);
+                    setError(err.message);
+                    setLoading(false);
+                }
+            }, []);
+            
+            if (loading) return <div>Loading Firebase...</div>;
+            if (error) return <div style={{color: 'red'}}>Error: {error}</div>;
+            
+            return (
+                <div style={{padding: '20px'}}>
+                    <h1>Firebase 연결 성공!</h1>
+                    <p>React와 Firebase가 모두 정상적으로 로드되었습니다.</p>
+                    <p>이제 원본 파일의 문제를 수정할 수 있습니다.</p>
+                </div>
+            );
+        };
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

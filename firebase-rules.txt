@@ -1,0 +1,48 @@
+Firebase Firestore Security Rules 설정 가이드
+
+1. Firebase Console 접속
+   - https://console.firebase.google.com
+   - "neofit-paycalc" 프로젝트 선택
+
+2. Firestore Database → Rules 탭으로 이동
+
+3. 다음 규칙으로 변경:
+
+=== 개발/테스트용 (모든 사용자 허용) ===
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+
+=== 특정 사용자만 허용 (보안 강화) ===
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /sales/{document} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == "17Cu4EAqtPgjhAyQTpDsWBBZt3m2";
+    }
+  }
+}
+
+=== 이메일 기반 허용 ===
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /sales/{document} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.email == "gio7603@gmail.com";
+    }
+  }
+}
+
+4. "Publish" 버튼 클릭하여 규칙 적용
+
+주의사항:
+- 규칙 변경 후 반영되는데 몇 분 걸릴 수 있습니다
+- 개발 중에는 첫 번째 규칙 사용 권장
+- 실제 운영 시에는 더 엄격한 규칙 사용 필요

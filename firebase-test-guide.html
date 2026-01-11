@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 통합 가이드 - NeoFit PayCalc</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            line-height: 1.6;
+            padding: 40px 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00FF88;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        h2 {
+            color: #00C6FF;
+            margin-top: 30px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .feature {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        .feature::before {
+            content: "✅ ";
+        }
+        .code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        .warning {
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        a {
+            color: #00FF88;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎉 Firebase 통합 완료!</h1>
+    
+    <div class="success">
+        <strong>축하합니다!</strong> NeoFit PayCalc가 이제 Firebase와 완전히 통합되었습니다.
+        원하시던 디자인을 유지하면서 Firebase의 모든 기능을 사용할 수 있습니다.
+    </div>
+
+    <h2>📋 새로운 기능</h2>
+    <div class="card">
+        <div class="feature">실시간 데이터 동기화 - 여러 기기에서 동시에 데이터 확인 가능</div>
+        <div class="feature">클라우드 저장 - 데이터 손실 걱정 없음</div>
+        <div class="feature">사용자 인증 - 안전한 로그인 시스템</div>
+        <div class="feature">자동 백업 - Firebase가 자동으로 데이터 백업</div>
+        <div class="feature">오프라인 지원 - 인터넷 연결이 끊겨도 작동</div>
+    </div>
+
+    <h2>🚀 사용 방법</h2>
+    <div class="card">
+        <h3>1. 로그인</h3>
+        <p>Firebase 인증을 사용하여 안전하게 로그인합니다:</p>
+        <div class="code">
+이메일: admin@neofit.com
+비밀번호: [설정한 비밀번호]
+        </div>
+        
+        <h3>2. 데이터 입력</h3>
+        <p>기존과 동일하게 매출 데이터를 입력합니다. 모든 데이터는 자동으로 Firebase에 저장됩니다.</p>
+        
+        <h3>3. 다른 기기에서 확인</h3>
+        <p>같은 계정으로 로그인하면 어디서든 데이터를 확인할 수 있습니다.</p>
+    </div>
+
+    <h2>⚙️ Firebase 설정 정보</h2>
+    <div class="card">
+        <p>현재 적용된 Firebase 프로젝트:</p>
+        <div class="code">
+프로젝트 ID: neofit-paycalc
+인증 방식: 이메일/비밀번호
+데이터베이스: Firestore
+저장 위치: sales/{date}
+        </div>
+    </div>
+
+    <h2>🔐 보안</h2>
+    <div class="card">
+        <div class="feature">모든 데이터는 암호화되어 전송됩니다</div>
+        <div class="feature">사용자별 접근 권한 관리 가능</div>
+        <div class="feature">Firebase Security Rules로 데이터 보호</div>
+    </div>
+
+    <div class="warning">
+        <strong>주의사항:</strong>
+        <ul>
+            <li>반드시 강력한 비밀번호를 사용하세요</li>
+            <li>Firebase Console에서 주기적으로 사용 현황을 확인하세요</li>
+            <li>무료 요금제 한도를 확인하세요 (일일 읽기 50,000회, 쓰기 20,000회)</li>
+        </ul>
+    </div>
+
+    <h2>📱 테스트 파일들</h2>
+    <div class="card">
+        <p><strong>Firebase 통합 버전 (새로운 메인 파일):</strong></p>
+        <p><a href="neofit-paycalc-firebase-complete.html">neofit-paycalc-firebase-complete.html</a> - 원래 디자인 + Firebase 기능</p>
+        
+        <p style="margin-top: 20px;"><strong>이전 버전들 (참고용):</strong></p>
+        <p><a href="neofit-paycalc.html">neofit-paycalc.html</a> - 원본 (localStorage 사용)</p>
+        <p><a href="neofit-paycalc-firebase.html">neofit-paycalc-firebase.html</a> - 첫 번째 Firebase 버전</p>
+    </div>
+
+    <h2>🆘 문제 해결</h2>
+    <div class="card">
+        <p><strong>로그인이 안 되는 경우:</strong></p>
+        <ul>
+            <li>Firebase Console에서 Authentication이 활성화되어 있는지 확인</li>
+            <li>이메일/비밀번호 인증이 켜져 있는지 확인</li>
+            <li>사용자가 등록되어 있는지 확인</li>
+        </ul>
+        
+        <p><strong>데이터가 저장되지 않는 경우:</strong></p>
+        <ul>
+            <li>Firestore가 활성화되어 있는지 확인</li>
+            <li>Security Rules가 올바르게 설정되어 있는지 확인</li>
+            <li>브라우저 콘솔에서 에러 메시지 확인</li>
+        </ul>
+    </div>
+
+    <div class="success" style="text-align: center; margin-top: 40px;">
+        <h3>🎊 Firebase 통합이 완료되었습니다!</h3>
+        <p>이제 어디서든 안전하게 NeoFit PayCalc를 사용할 수 있습니다.</p>
+    </div>
+</body>
+</html>

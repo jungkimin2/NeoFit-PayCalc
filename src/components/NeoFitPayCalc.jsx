@@ -42,6 +42,7 @@ const NeoFitPayCalc = () => {
   const [selectedProducts, setSelectedProducts] = useState({});
   const [customPrices, setCustomPrices] = useState({});
   const [expandedDays, setExpandedDays] = useState({});
+  const [editingDetails, setEditingDetails] = useState({});
 
   // 상품 목록
   const products = ['네오핏', '헬스권', '필라테스', '운동복', '락커', '일일권'];
@@ -122,6 +123,87 @@ const NeoFitPayCalc = () => {
           amount: newTotalAmount
         }
       };
+    });
+  };
+
+  const updateSaleDetail = (day, detailId, updatedFields) => {
+    const dateKey = getDateKey(day);
+    setSalesData(prev => {
+      const currentData = prev[dateKey] || { amount: 0, approved: false, details: [] };
+      const newDetails = (currentData.details || []).map(detail => {
+        if (detail.id !== detailId) {
+          return detail;
+        }
+        return {
+          ...detail,
+          ...updatedFields
+        };
+      });
+      const newTotalAmount = newDetails.reduce((sum, detail) => sum + (detail.price || 0), 0);
+
+      return {
+        ...prev,
+        [dateKey]: {
+          ...currentData,
+          details: newDetails,
+          amount: newTotalAmount
+        }
+      };
+    });
+  };
+
+  const handleStartEditingDetail = (day, detail) => {
+    setEditingDetails(prev => ({
+      ...prev,
+      [detail.id]: {
+        customerName: detail.customerName || '',
+        product: detail.product || '',
+        price: detail.price ? detail.price.toString() : ''
+      }
+    }));
+  };
+
+  const handleCancelEditingDetail = (detailId) => {
+    setEditingDetails(prev => {
+      const { [detailId]: _, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const handleEditingDetailChange = (detailId, field, value) => {
+    setEditingDetails(prev => ({
+      ...prev,
+      [detailId]: {
+        ...prev[detailId],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSaveEditingDetail = (day, detailId) => {
+    const editingData = editingDetails[detailId];
+    if (!editingData) {
+      return;
+    }
+
+    const { customerName, product, price } = editingData;
+    const trimmedName = (customerName || '').trim();
+    const parsedPrice = parseInt(price, 10);
+
+    if (!trimmedName || !product || !price || Number.isNaN(parsedPrice)) {
+      alert('회원명, 상품, 가격을 모두 입력해주세요.');
+      return;
+    }
+
+    updateSaleDetail(day, detailId, {
+      customerName: trimmedName,
+      product,
+      price: parsedPrice
+    });
+
+    setEditingDetails(prev => {
+      const { [detailId]: _, ...rest } = prev;
+      return rest;
     });
   };
 
@@ -448,35 +530,115 @@ const NeoFitPayCalc = () => {
                           매출 내역
                         </div>
                         <div className="max-h-40 overflow-y-auto space-y-2">
-                          {dayData.details.map(detail => (
-                            <div key={detail.id} className="glass-effect rounded-xl p-3 text-sm hover:scale-[1.02] transition-all">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="font-semibold text-white flex items-center gap-2">
-                                    <User size={14} />
-                                    {detail.customerName}
+                          {dayData.details.map(detail => {
+                            const editingData = editingDetails[detail.id];
+                            const isEditing = Boolean(editingData);
+
+                            return (
+                              <div key={detail.id} className="glass-effect rounded-xl p-3 text-sm transition-all hover:scale-[1.02]">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    {isEditing ? (
+                                      <div className="space-y-3">
+                                        <div className="flex flex-col gap-2">
+                                          <span className="flex items-center gap-2 text-xs font-semibold text-gray-300">
+                                            <User size={14} />
+                                            회원명
+                                          </span>
+                                          <input
+                                            type="text"
+                                            value={editingData.customerName}
+                                            onChange={(e) => handleEditingDetailChange(detail.id, 'customerName', e.target.value)}
+                                            className="glass-effect w-full rounded-lg px-3 py-2 text-sm text-white transition-all focus:outline-none focus:border-green-400"
+                                          />
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                          <span className="flex items-center gap-2 text-xs font-semibold text-gray-300">
+                                            <Package size={14} />
+                                            상품
+                                          </span>
+                                          <select
+                                            value={editingData.product}
+                                            onChange={(e) => handleEditingDetailChange(detail.id, 'product', e.target.value)}
+                                            className="glass-effect w-full rounded-lg px-3 py-2 text-sm text-white transition-all focus:outline-none focus:border-green-400"
+                                          >
+                                            <option value="">상품을 선택하세요</option>
+                                            {products.map(product => (
+                                              <option key={product} value={product}>{product}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                          <span className="flex items-center gap-2 text-xs font-semibold text-gray-300">
+                                            <CreditCard size={14} />
+                                            가격
+                                          </span>
+                                          <input
+                                            type="number"
+                                            value={editingData.price}
+                                            onChange={(e) => handleEditingDetailChange(detail.id, 'price', e.target.value)}
+                                            className="glass-effect w-full rounded-lg px-3 py-2 text-sm text-white transition-all focus:outline-none focus:border-green-400"
+                                          />
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-1">
+                                          <button
+                                            onClick={() => handleCancelEditingDetail(detail.id)}
+                                            className="flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-gray-300 transition-all hover:text-white"
+                                          >
+                                            취소
+                                          </button>
+                                          <button
+                                            onClick={() => handleSaveEditingDetail(day, detail.id)}
+                                            className="flex items-center justify-center rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 text-sm font-semibold text-gray-900 shadow-lg transition-all hover:from-green-400 hover:to-green-500 hover:shadow-xl"
+                                          >
+                                            저장
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <div className="flex items-center gap-2 font-semibold text-white">
+                                          <User size={14} />
+                                          {detail.customerName}
+                                        </div>
+                                        <div className="ml-5 mt-1 text-xs text-gray-400">
+                                          {detail.product}
+                                        </div>
+                                        <div className="mt-2 text-lg font-bold text-green-400">
+                                          {(detail.price || 0).toLocaleString()}원
+                                        </div>
+                                        <div className="mt-1 text-xs text-gray-500">
+                                          {detail.timestamp}
+                                        </div>
+                                      </>
+                                    )}
                                   </div>
-                                  <div className="text-gray-400 text-xs mt-1 ml-5">
-                                    {detail.product}
-                                  </div>
-                                  <div className="text-green-400 font-bold mt-2 text-lg">
-                                    {(detail.price || 0).toLocaleString()}원
-                                  </div>
-                                  <div className="text-gray-500 text-xs mt-1">
-                                    {detail.timestamp}
-                                  </div>
+                                  {!dayData.approved && (
+                                    <div className="ml-3 flex flex-col items-end gap-2">
+                                      <button
+                                        onClick={() => removeSaleDetail(day, detail.id)}
+                                        className="flex h-10 w-10 items-center justify-center rounded-lg border border-red-500/40 bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-lg transition-all hover:from-rose-400 hover:to-red-500 hover:shadow-xl"
+                                        aria-label="매출 내역 삭제"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                      <button
+                                        onClick={() => (isEditing ? handleCancelEditingDetail(detail.id) : handleStartEditingDetail(day, detail))}
+                                        className={`flex h-10 w-10 items-center justify-center rounded-lg border text-white shadow-lg transition-all hover:shadow-xl ${
+                                          isEditing
+                                            ? 'border-blue-500/40 bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500'
+                                            : 'border-emerald-400/50 bg-gradient-to-br from-emerald-400 to-green-500 text-gray-900 hover:from-emerald-300 hover:to-green-400'
+                                        }`}
+                                        aria-label="매출 내역 수정"
+                                      >
+                                        <Edit size={16} />
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
-                                {!dayData.approved && (
-                                  <button
-                                    onClick={() => removeSaleDetail(day, detail.id)}
-                                    className="text-red-400 hover:text-red-300 ml-3 p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-all"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                )}
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}

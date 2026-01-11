@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase API 키 확인</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        h1 { color: #00FF88; }
+        h2 { color: #00C6FF; }
+        .step {
+            background: rgba(0, 198, 255, 0.1);
+            border-left: 4px solid #00C6FF;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .important {
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        img {
+            max-width: 100%;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔑 Firebase API 키 확인 방법</h1>
+    
+    <div class="important">
+        <h3>⚠️ 중요</h3>
+        <p>Firebase Console에서 API 키를 다시 확인해야 합니다.</p>
+    </div>
+
+    <div class="card">
+        <h2>방법 1: 프로젝트 설정에서 확인</h2>
+        <div class="step">
+            <h3>1단계: Firebase Console 접속</h3>
+            <p>https://console.firebase.google.com</p>
+            <p>→ "neofit-paycalc" 프로젝트 선택</p>
+        </div>
+        <div class="step">
+            <h3>2단계: 프로젝트 설정</h3>
+            <p>왼쪽 상단 ⚙️ 설정 아이콘 → "프로젝트 설정"</p>
+        </div>
+        <div class="step">
+            <h3>3단계: 일반 탭 확인</h3>
+            <p>• "일반" 탭이 선택되어 있는지 확인</p>
+            <p>• "웹 API 키" 항목 찾기</p>
+            <p>• 이 키를 복사하세요!</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>방법 2: 웹 앱 구성에서 확인</h2>
+        <div class="step">
+            <h3>내 앱 섹션</h3>
+            <p>• 아래로 스크롤해서 "내 앱" 찾기</p>
+            <p>• 웹 앱 (</> 아이콘) 클릭</p>
+            <p>• "SDK 설정 및 구성" 섹션에서 apiKey 확인</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>🎯 확인해야 할 항목</h2>
+        <div class="step">
+            <p><strong>웹 API 키가 다음과 같은 형식인지 확인:</strong></p>
+            <p>• AIzaSy로 시작</p>
+            <p>• 총 39자 정도의 길이</p>
+            <p>• 대소문자와 숫자 혼합</p>
+        </div>
+    </div>
+
+    <div class="important">
+        <h3>💡 해결 방법</h3>
+        <ol>
+            <li>Firebase Console에서 정확한 웹 API 키 복사</li>
+            <li>코드의 apiKey 부분에 붙여넣기</li>
+            <li>브라우저 캐시 삭제 후 새로고침</li>
+        </ol>
+    </div>
+
+    <div class="card" style="background: rgba(0, 255, 136, 0.1);">
+        <h2>✅ 올바른 설정 예시</h2>
+        <pre style="background: #000; padding: 15px; border-radius: 8px; overflow-x: auto;">
+const firebaseConfig = {
+    apiKey: "AIzaSy...(39자 정도)",  // ← 이 부분이 중요!
+    authDomain: "neofit-paycalc.firebaseapp.com",
+    projectId: "neofit-paycalc",
+    storageBucket: "neofit-paycalc.firebasestorage.app",
+    messagingSenderId: "1072136228278",
+    appId: "1:1072136228278:web:5d3be856d537b2739d0517"
+};</pre>
+    </div>
+</body>
+</html>

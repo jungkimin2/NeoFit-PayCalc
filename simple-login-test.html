@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 로그인 테스트</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <h1>Firebase 로그인 테스트</h1>
+    <button onclick="testLogin()">로그인 테스트</button>
+    <div id="result"></div>
+    
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyA7QFT8mJtSAe4T5dl6xIcNpN-8KiF1WJ0",
+            authDomain: "neofit-paycalc.firebaseapp.com",
+            projectId: "neofit-paycalc",
+            storageBucket: "neofit-paycalc.firebasestorage.app",
+            messagingSenderId: "482350739592",
+            appId: "1:482350739592:web:35ef96eb8deebf8e0bb57f"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        
+        async function testLogin() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '로그인 시도 중...';
+            
+            try {
+                const userCredential = await firebase.auth().signInWithEmailAndPassword('gio7603@gmail.com', 'aodgh760312@');
+                resultDiv.innerHTML = '<h2 style="color: green;">로그인 성공!</h2><p>이메일: ' + userCredential.user.email + '</p>';
+                console.log('로그인 성공:', userCredential.user);
+            } catch (error) {
+                resultDiv.innerHTML = '<h2 style="color: red;">로그인 실패</h2><p>에러: ' + error.code + ' - ' + error.message + '</p>';
+                console.error('로그인 에러:', error);
+                
+                // 자세한 에러 정보
+                if (error.code === 'auth/wrong-password') {
+                    resultDiv.innerHTML += '<p>비밀번호가 틀렸습니다. Firebase Console에서 비밀번호를 재설정해보세요.</p>';
+                } else if (error.code === 'auth/user-not-found') {
+                    resultDiv.innerHTML += '<p>사용자를 찾을 수 없습니다.</p>';
+                } else if (error.code === 'auth/invalid-login-credentials') {
+                    resultDiv.innerHTML += '<p>로그인 정보가 올바르지 않습니다. 이메일과 비밀번호를 다시 확인해주세요.</p>';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
