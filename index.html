@@ -3942,33 +3942,54 @@
                         ctx.save();
 
                         try {
-                            // 총매출 계산 (실제 데이터만)
+                            // 총매출 계산
                             const total = hasData ? validCategories.reduce((sum, cat) => sum + (cat.total || 0), 0) : 0;
                             const totalText = total.toLocaleString() + '원';
 
-                            // 중앙 좌표 계산
+                            // 중앙 좌표 및 가용 반경 계산
                             const centerX = (left + right) / 2;
                             const centerY = (top + bottom) / 2;
 
+                            // 차트의 안쪽 반지름(innerRadius)을 기준으로 가용 너비 계산 (좌우 여백 10% 제외)
+                            const innerRadius = chart.innerRadius || 0;
+                            const maxTextWidth = innerRadius * 1.8; // 지름의 약 90%
+
                             const isMobileView = window.innerWidth < 768;
 
-                            // 라벨 텍스트 (작게)
-                            ctx.font = isMobileView ? 'bold 12px Pretendard, sans-serif' : 'bold 16px Pretendard, sans-serif';
+                            // 1. 라벨 텍스트 (XX월 총 매출) - 동적으로 크기 조절
+                            let labelFontSize = isMobileView ? 11 : 16;
+                            ctx.font = `bold ${labelFontSize}px Pretendard, sans-serif`;
+                            const monthText = `${selectedMonth + 1}월 총 매출`;
+
+                            // 너무 길면 줄이기
+                            let labelWidth = ctx.measureText(monthText).width;
+                            if (labelWidth > maxTextWidth) {
+                                labelFontSize = Math.floor(labelFontSize * (maxTextWidth / labelWidth));
+                                ctx.font = `bold ${labelFontSize}px Pretendard, sans-serif`;
+                            }
+
                             ctx.fillStyle = '#9ca3af';
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
                             ctx.shadowBlur = 0;
-                            const monthText = `${selectedMonth + 1}월`;
-                            ctx.fillText(`${monthText} 총 매출`, centerX, centerY - (isMobileView ? 18 : 30));
+                            ctx.fillText(monthText, centerX, centerY - (isMobileView ? 15 : 25));
 
-                            // 금액 텍스트 (크게, 주황 네온 효과 - 부드럽게)
-                            ctx.font = isMobileView ? 'bold 22px Pretendard, sans-serif' : 'bold 32px Pretendard, sans-serif';
+                            // 2. 금액 텍스트 - 동적으로 크기 조절
+                            let amountFontSize = isMobileView ? 18 : 32;
+                            ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
+
+                            // 텍스트 너비 측정 후 가용 너비를 넘으면 폰트 크기 축소
+                            let textWidth = ctx.measureText(totalText).width;
+                            if (textWidth > maxTextWidth) {
+                                amountFontSize = Math.floor(amountFontSize * (maxTextWidth / textWidth));
+                                ctx.font = `bold ${amountFontSize}px Pretendard, sans-serif`;
+                            }
+
                             ctx.fillStyle = '#FF6B35';
                             ctx.shadowColor = 'rgba(255, 107, 53, 0.6)';
-                            ctx.shadowBlur = isMobileView ? 8 : 15;
+                            ctx.shadowBlur = isMobileView ? 5 : 15;
 
-                            // 네온 효과 (한 번만 그리기)
-                            ctx.fillText(totalText, centerX, centerY + (isMobileView ? 10 : 10));
+                            ctx.fillText(totalText, centerX, centerY + (isMobileView ? 10 : 12));
                         } catch (error) {
                             console.error('Center text plugin error:', error);
                         }
