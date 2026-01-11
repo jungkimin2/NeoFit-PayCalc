@@ -6404,6 +6404,18 @@
 
                     const isSelected = selectedMonth === month && selectedYear === yearView;
 
+                    // 금액대별 색상 정의 (월매출 기준)
+                    const getMonthColor = (total) => {
+                        if (total >= 30000000) return '#FF4D94'; // 3000만 이상: 핑크
+                        if (total >= 20000000) return '#FB923C'; // 2000만 이상: 오렌지
+                        if (total >= 15000000) return '#00FF88'; // 1500만 이상: 네오 그린
+                        if (total >= 10000000) return '#60A5FA'; // 1000만 이상: 블루
+                        return '#9ca3af'; // 기본 그레이
+                    };
+
+                    const statusColor = monthTotal > 0 ? getMonthColor(monthTotal) : '#4b5563';
+                    const hasHighSales = monthTotal >= 15000000;
+
                     return (
                         <div
                             key={`mobile-month-${month}`}
@@ -6415,14 +6427,14 @@
                             }}
                             className="glass-effect rounded-xl p-3 flex flex-col items-center justify-center transition-all active:scale-95"
                             style={{
-                                border: isSelected ? '2px solid #00FF88' : '1px solid rgba(255,255,255,0.1)',
-                                background: isSelected ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                                border: isSelected ? `2px solid ${statusColor}` : '1px solid rgba(255,255,255,0.1)',
+                                background: isSelected ? `${statusColor}1a` : 'rgba(255, 255, 255, 0.03)',
                                 minHeight: '85px',
-                                boxShadow: isSelected ? '0 0 15px rgba(0, 255, 136, 0.2)' : 'none'
+                                boxShadow: isSelected ? `0 0 15px ${statusColor}33` : (hasHighSales ? `0 0 10px ${statusColor}1a` : 'none')
                             }}
                         >
                             <span className="text-[10px] text-gray-400 mb-1">{month + 1}월</span>
-                            <span className="text-base font-bold text-center" style={{ color: monthTotal > 0 ? '#00FF88' : '#6b7280' }}>
+                            <span className="text-base font-bold text-center" style={{ color: statusColor }}>
                                 {monthTotal > 0 ? (monthTotal / 10000).toLocaleString() + '만' : '0'}
                             </span>
                             {monthTotal > 0 && (
