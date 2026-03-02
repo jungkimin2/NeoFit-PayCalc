@@ -1573,6 +1573,34 @@
                     console.error('회원 검색 오류:', error);
                     return { success: false, error: error.message };
                 }
+            },
+
+            // 상품 가격 설정 저장
+            saveProductSettings: async (data) => {
+                try {
+                    await db.collection('settings').doc('products').set({
+                        ...data,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    return { success: true };
+                } catch (error) {
+                    console.error('설정 저장 오류:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // 상품 가격 설정 불러오기
+            loadProductSettings: async () => {
+                try {
+                    const doc = await db.collection('settings').doc('products').get();
+                    if (doc.exists) {
+                        return { success: true, data: doc.data() };
+                    }
+                    return { success: true, data: null };
+                } catch (error) {
+                    console.error('설정 로드 오류:', error);
+                    return { success: false, error: error.message };
+                }
             }
         };
 
@@ -2080,6 +2108,7 @@
             const [showOtherModal, setShowOtherModal] = useState(false);
             const [showDetailModal, setShowDetailModal] = useState(false);
             const [selectedDetailEntry, setSelectedDetailEntry] = useState(null);
+            const [showPriceSettings, setShowPriceSettings] = useState(false);
 
             // 모바일 일별 상세 모달 상태
             const [mobileExpandedDay, setMobileExpandedDay] = useState(null);
@@ -2768,92 +2797,60 @@
                 }
             }, [user, selectedYear, selectedMonth]);
 
-            // 상품 목록
-            const healthProducts = ['1개월', '3개월', '6개월', '12개월'];
-            const ptProducts = ['1회 체험', '5회 체험'];
-            const pilatesProducts = [
-                '3개월 (24회 주 2회)',
-                '6개월 (48회 주 2회)',
-                '12개월 (96회 주 2회)',
-                '3개월 (36회 주 3회)',
-                '6개월 (72회 주 3회)',
-                '12개월 (144회 주 3회)'
-            ];
-            const neofitProducts = [
-                '네오핏 12회 단독 상품',
-                '네오 싱크 1:1 5회권',
-                '네오 싱크 2:1 5회권',
-                '30일 기간권',
-                '90일 기간권',
-                '180일 기간권',
-                '8회 주 2회',
-                '24회 주 2회',
-                '48회 주 2회',
-                '12회 주 3회',
-                '36회 주 3회',
-                '72회 주 3회'
-            ];
-            const lockerProducts = ['운동복', '락커'];
+            // 기본 상품 목록 (Firebase에서 로드 후 덮어쓰기)
+            const DEFAULT_CATEGORIES = {
+                health: { label: '헬스 이용권', products: ['1개월', '3개월', '6개월', '12개월'] },
+                pt: { label: '1:1 PT 이용권', products: ['1회 체험', '5회 체험'] },
+                pilates: { label: '필라테스 이용권', products: ['3개월 (24회 주 2회)', '6개월 (48회 주 2회)', '12개월 (96회 주 2회)', '3개월 (36회 주 3회)', '6개월 (72회 주 3회)', '12개월 (144회 주 3회)'] },
+                neofit: { label: '네오핏 이용권', products: ['네오핏 12회 단독 상품', '네오 싱크 1:1 5회권', '네오 싱크 2:1 5회권', '30일 기간권', '90일 기간권', '180일 기간권', '8회 주 2회', '24회 주 2회', '48회 주 2회', '12회 주 3회', '36회 주 3회', '72회 주 3회'] },
+                locker: { label: '운동복/락커', products: ['운동복', '락커'] }
+            };
+
+            const DEFAULT_PRICES = {
+                '1개월': 110000, '3개월': 270000, '6개월': 420000, '12개월': 600000,
+                '1회 체험': 45000, '5회 체험': 225000,
+                '일일권': 10000, '근인일일권': 10000,
+                '네오 싱크 1:1 5회권': 250000, '네오 싱크 2:1 5회권': 200000,
+                '네오핏 12회 단독 상품': 264000, '30일 기간권': 390000,
+                '180일 기간권': 1980000, '90일 기간권': 1080000,
+                '8회 주 2회': 264000, '24회 주 2회': 744000, '48회 주 2회': 1392000,
+                '12회 주 3회': 348000, '36회 주 3회': 972000, '72회 주 3회': 1800000,
+                '3개월 (24회 주 2회)': 384000, '6개월 (48회 주 2회)': 624000, '12개월 (96회 주 2회)': 960000,
+                '3개월 (36회 주 3회)': 540000, '6개월 (72회 주 3회)': 864000, '12개월 (144회 주 3회)': 1296000,
+                '운동복 1개월': 10000, '운동복 2개월': 20000, '운동복 3개월': 30000, '운동복 4개월': 40000,
+                '운동복 5개월': 50000, '운동복 6개월': 60000, '운동복 7개월': 70000, '운동복 8개월': 80000,
+                '운동복 9개월': 90000, '운동복 10개월': 100000, '운동복 11개월': 110000, '운동복 12개월': 120000,
+                '락커 1개월': 10000, '락커 2개월': 20000, '락커 3개월': 30000, '락커 4개월': 40000,
+                '락커 5개월': 50000, '락커 6개월': 60000, '락커 7개월': 70000, '락커 8개월': 80000,
+                '락커 9개월': 90000, '락커 10개월': 100000, '락커 11개월': 110000, '락커 12개월': 120000
+            };
+
+            const [categoryConfig, setCategoryConfig] = useState(DEFAULT_CATEGORIES);
+            const [productPrices, setProductPrices] = useState(DEFAULT_PRICES);
+
+            // Firebase에서 가격 설정 로드
+            React.useEffect(() => {
+                if (!user) return;
+                const loadSettings = async () => {
+                    const result = await salesService.loadProductSettings();
+                    if (result.success && result.data) {
+                        if (result.data.categories) setCategoryConfig(result.data.categories);
+                        if (result.data.prices) setProductPrices(prev => ({ ...prev, ...result.data.prices }));
+                    }
+                };
+                loadSettings();
+            }, [user]);
+
+            // 카테고리에서 상품 목록 파생
+            const healthProducts = categoryConfig.health?.products || DEFAULT_CATEGORIES.health.products;
+            const ptProducts = categoryConfig.pt?.products || DEFAULT_CATEGORIES.pt.products;
+            const pilatesProducts = categoryConfig.pilates?.products || DEFAULT_CATEGORIES.pilates.products;
+            const neofitProducts = categoryConfig.neofit?.products || DEFAULT_CATEGORIES.neofit.products;
+            const lockerProducts = categoryConfig.locker?.products || DEFAULT_CATEGORIES.locker.products;
             const lockerPeriods = ['1개월', '2개월', '3개월', '4개월', '5개월', '6개월', '7개월', '8개월', '9개월', '10개월', '11개월', '12개월'];
 
-            // 상품 가격표
-            const productPrices = {
-                // 헬스 이용권
-                '1개월': 110000,
-                '3개월': 270000,
-                '6개월': 420000,
-                '12개월': 600000,
-                // 1:1 PT 이용권
-                '1회 체험': 45000,
-                '5회 체험': 225000,
-                // 일일권
-                '일일권': 10000,
-                '근인일일권': 10000,
-                // 네오핏 이용권
-                '네오 싱크 1:1 5회권': 250000,
-                '네오 싱크 2:1 5회권': 200000,
-                '네오핏 12회 단독 상품': 264000,
-                '30일 기간권': 390000,
-                '180일 기간권': 1980000,
-                '90일 기간권': 1080000,
-                '8회 주 2회': 264000,
-                '24회 주 2회': 744000,
-                '48회 주 2회': 1392000,
-                '12회 주 3회': 348000,
-                '36회 주 3회': 972000,
-                '72회 주 3회': 1800000,
-                '3개월 (24회 주 2회)': 384000,
-                '6개월 (48회 주 2회)': 624000,
-                '12개월 (96회 주 2회)': 960000,
-                '3개월 (36회 주 3회)': 540000,
-                '6개월 (72회 주 3회)': 864000,
-                '12개월 (144회 주 3회)': 1296000,
-                // 운동복/락커 가격 (1개월부터 12개월까지)
-                '운동복 1개월': 10000,
-                '운동복 2개월': 20000,
-                '운동복 3개월': 30000,
-                '운동복 4개월': 40000,
-                '운동복 5개월': 50000,
-                '운동복 6개월': 60000,
-                '운동복 7개월': 70000,
-                '운동복 8개월': 80000,
-                '운동복 9개월': 90000,
-                '운동복 10개월': 100000,
-                '운동복 11개월': 110000,
-                '운동복 12개월': 120000,
-                '락커 1개월': 10000,
-                '락커 2개월': 20000,
-                '락커 3개월': 30000,
-                '락커 4개월': 40000,
-                '락커 5개월': 50000,
-                '락커 6개월': 60000,
-                '락커 7개월': 70000,
-                '락커 8개월': 80000,
-                '락커 9개월': 90000,
-                '락커 10개월': 100000,
-                '락커 11개월': 110000,
-                '락커 12개월': 120000
-            };
+            // 커스텀 카테고리 목록 (기본 카테고리 제외)
+            const customCategories = Object.keys(categoryConfig).filter(k => !['health', 'pt', 'pilates', 'neofit', 'locker'].includes(k));
 
             // 날짜 키 생성
             const getDateKey = (day) => {
@@ -4290,6 +4287,355 @@
                 }
             };
 
+            // ===== 가격 설정 모달 컴포넌트 =====
+            const PriceSettingsModal = () => {
+                const allCatKeys = Object.keys(categoryConfig);
+                const [activeTab, setActiveTab] = useState(allCatKeys[0] || 'health');
+                const [editCats, setEditCats] = useState(JSON.parse(JSON.stringify(categoryConfig)));
+                const [editPrices, setEditPrices] = useState({ ...productPrices });
+                const [newProductName, setNewProductName] = useState('');
+                const [newProductPrice, setNewProductPrice] = useState('');
+                const [newCatName, setNewCatName] = useState('');
+                const [newCatKey, setNewCatKey] = useState('');
+                const [saving, setSaving] = useState(false);
+                const [showAddCategory, setShowAddCategory] = useState(false);
+
+                const handlePriceChange = (productName, value) => {
+                    const numVal = parseInt(value.replace(/[^0-9]/g, ''), 10) || 0;
+                    setEditPrices(prev => ({ ...prev, [productName]: numVal }));
+                };
+
+                const addProduct = () => {
+                    if (!newProductName.trim()) return;
+                    const price = parseInt(newProductPrice.replace(/[^0-9]/g, ''), 10) || 0;
+                    setEditCats(prev => {
+                        const updated = { ...prev };
+                        if (!updated[activeTab]) {
+                            updated[activeTab] = { label: activeTab, products: [] };
+                        }
+                        if (!updated[activeTab].products.includes(newProductName.trim())) {
+                            updated[activeTab] = {
+                                ...updated[activeTab],
+                                products: [...updated[activeTab].products, newProductName.trim()]
+                            };
+                        }
+                        return updated;
+                    });
+                    setEditPrices(prev => ({ ...prev, [newProductName.trim()]: price }));
+                    setNewProductName('');
+                    setNewProductPrice('');
+                };
+
+                const moveProduct = (index, direction) => {
+                    const newIdx = index + direction;
+                    setEditCats(prev => {
+                        const updated = { ...prev };
+                        const products = [...(updated[activeTab]?.products || [])];
+                        if (newIdx < 0 || newIdx >= products.length) return prev;
+                        [products[index], products[newIdx]] = [products[newIdx], products[index]];
+                        updated[activeTab] = { ...updated[activeTab], products };
+                        return updated;
+                    });
+                };
+
+                const removeProduct = (productName) => {
+                    if (!confirm(`"${productName}" 상품을 삭제하시겠습니까?`)) return;
+                    setEditCats(prev => {
+                        const updated = { ...prev };
+                        if (updated[activeTab]) {
+                            updated[activeTab] = {
+                                ...updated[activeTab],
+                                products: updated[activeTab].products.filter(p => p !== productName)
+                            };
+                        }
+                        return updated;
+                    });
+                };
+
+                const addCategory = () => {
+                    if (!newCatName.trim() || !newCatKey.trim()) return;
+                    const key = newCatKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    if (editCats[key]) {
+                        alert('이미 존재하는 카테고리 키입니다.');
+                        return;
+                    }
+                    setEditCats(prev => ({
+                        ...prev,
+                        [key]: { label: newCatName.trim(), products: [] }
+                    }));
+                    setActiveTab(key);
+                    setNewCatName('');
+                    setNewCatKey('');
+                    setShowAddCategory(false);
+                };
+
+                const removeCategory = (catKey) => {
+                    if (['health', 'pt', 'pilates', 'neofit', 'locker'].includes(catKey)) {
+                        alert('기본 카테고리는 삭제할 수 없습니다.');
+                        return;
+                    }
+                    if (!confirm(`"${editCats[catKey]?.label || catKey}" 카테고리를 삭제하시겠습니까?`)) return;
+                    setEditCats(prev => {
+                        const updated = { ...prev };
+                        delete updated[catKey];
+                        return updated;
+                    });
+                    setActiveTab('health');
+                };
+
+                const handleSave = async () => {
+                    setSaving(true);
+                    try {
+                        const result = await salesService.saveProductSettings({
+                            categories: editCats,
+                            prices: editPrices
+                        });
+                        if (result.success) {
+                            setCategoryConfig(editCats);
+                            setProductPrices(editPrices);
+                            alert('가격 설정이 저장되었습니다!');
+                            setShowPriceSettings(false);
+                        } else {
+                            alert('저장 실패: ' + (result.error || '알 수 없는 오류'));
+                        }
+                    } catch (err) {
+                        alert('저장 중 오류: ' + err.message);
+                    }
+                    setSaving(false);
+                };
+
+                const currentCat = editCats[activeTab];
+                const currentProducts = currentCat?.products || [];
+                const editCatKeys = Object.keys(editCats);
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
+                        <div className="relative mx-4" style={{
+                            maxWidth: '560px',
+                            width: '100%',
+                            minHeight: '75vh',
+                            maxHeight: '90vh',
+                            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95))',
+                            borderRadius: '20px',
+                            border: '1px solid rgba(0, 255, 136, 0.3)',
+                            boxShadow: '0 0 40px rgba(0, 255, 136, 0.15), 0 25px 50px rgba(0, 0, 0, 0.5)',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}>
+                            {/* 헤더 */}
+                            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#00FF88', margin: 0 }}>
+                                        ⚙️ 가격 설정
+                                    </h2>
+                                    <button
+                                        onClick={() => setShowPriceSettings(false)}
+                                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    >✕</button>
+                                </div>
+                            </div>
+
+                            {/* 카테고리 탭 */}
+                            <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', flexShrink: 0, display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                {editCatKeys.map(catKey => (
+                                    <button
+                                        key={catKey}
+                                        onClick={() => setActiveTab(catKey)}
+                                        style={{
+                                            padding: '8px 16px',
+                                            borderRadius: '10px',
+                                            border: activeTab === catKey ? '1px solid #00FF88' : '1px solid rgba(255,255,255,0.1)',
+                                            background: activeTab === catKey ? 'rgba(0, 255, 136, 0.15)' : 'rgba(255,255,255,0.05)',
+                                            color: activeTab === catKey ? '#00FF88' : '#9ca3af',
+                                            fontWeight: activeTab === catKey ? 700 : 500,
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap',
+                                            fontSize: '0.85rem',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {editCats[catKey]?.label || catKey}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => setShowAddCategory(!showAddCategory)}
+                                    style={{
+                                        padding: '8px 14px',
+                                        borderRadius: '10px',
+                                        border: '1px dashed rgba(0, 255, 136, 0.4)',
+                                        background: 'transparent',
+                                        color: '#00FF88',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 600,
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >+ 추가</button>
+                            </div>
+
+                            {/* 카테고리 추가 패널 */}
+                            {showAddCategory && (
+                                <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0, 255, 136, 0.03)', flexShrink: 0 }}>
+                                    <p style={{ color: '#00FF88', fontWeight: 600, marginBottom: '10px', fontSize: '0.9rem' }}>📁 새 카테고리 추가</p>
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                        <input
+                                            type="text"
+                                            value={newCatName}
+                                            onChange={(e) => setNewCatName(e.target.value)}
+                                            placeholder="카테고리 이름 (예: 요가)"
+                                            style={{ flex: '1', minWidth: '120px', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.9rem' }}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={newCatKey}
+                                            onChange={(e) => setNewCatKey(e.target.value)}
+                                            placeholder="키 (예: yoga)"
+                                            style={{ width: '120px', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.9rem' }}
+                                        />
+                                        <button
+                                            onClick={addCategory}
+                                            style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #00FF88, #00c66e)', color: '#000', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}
+                                        >추가</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 상품 목록 */}
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }} className="custom-scrollbar">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <p style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.95rem', margin: 0 }}>
+                                        {currentCat?.label || activeTab} 상품 목록
+                                    </p>
+                                    {!['health', 'pt', 'pilates', 'neofit', 'locker'].includes(activeTab) && (
+                                        <button
+                                            onClick={() => removeCategory(activeTab)}
+                                            style={{ padding: '4px 12px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.8rem', cursor: 'pointer' }}
+                                        >카테고리 삭제</button>
+                                    )}
+                                </div>
+
+                                {currentProducts.length === 0 ? (
+                                    <p style={{ color: '#6b7280', textAlign: 'center', padding: '30px 0' }}>등록된 상품이 없습니다</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {currentProducts.map((product, idx) => (
+                                            <div key={idx} style={{
+                                                display: 'flex', alignItems: 'center', gap: '8px',
+                                                padding: '10px 14px', borderRadius: '12px',
+                                                background: 'rgba(255,255,255,0.03)',
+                                                border: '1px solid rgba(255,255,255,0.08)'
+                                            }}>
+                                                {/* 순서 변경 버튼 */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexShrink: 0 }}>
+                                                    <button
+                                                        onClick={() => moveProduct(idx, -1)}
+                                                        disabled={idx === 0}
+                                                        style={{
+                                                            width: '22px', height: '18px', borderRadius: '4px',
+                                                            border: 'none', background: idx === 0 ? 'transparent' : 'rgba(255,255,255,0.08)',
+                                                            color: idx === 0 ? 'rgba(255,255,255,0.15)' : '#9ca3af',
+                                                            cursor: idx === 0 ? 'default' : 'pointer', fontSize: '0.65rem',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+                                                        }}
+                                                    >▲</button>
+                                                    <button
+                                                        onClick={() => moveProduct(idx, 1)}
+                                                        disabled={idx === currentProducts.length - 1}
+                                                        style={{
+                                                            width: '22px', height: '18px', borderRadius: '4px',
+                                                            border: 'none', background: idx === currentProducts.length - 1 ? 'transparent' : 'rgba(255,255,255,0.08)',
+                                                            color: idx === currentProducts.length - 1 ? 'rgba(255,255,255,0.15)' : '#9ca3af',
+                                                            cursor: idx === currentProducts.length - 1 ? 'default' : 'pointer', fontSize: '0.65rem',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+                                                        }}
+                                                    >▼</button>
+                                                </div>
+                                                <span style={{ flex: 1, color: '#e2e8f0', fontSize: '0.9rem' }}>{product}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <input
+                                                        type="text"
+                                                        value={(editPrices[product] || 0).toLocaleString()}
+                                                        onChange={(e) => handlePriceChange(product, e.target.value)}
+                                                        style={{
+                                                            width: '120px', textAlign: 'right',
+                                                            padding: '8px 12px', borderRadius: '8px',
+                                                            border: '1px solid rgba(0, 255, 136, 0.2)',
+                                                            background: 'rgba(0,0,0,0.3)', color: '#00FF88',
+                                                            fontWeight: 600, fontSize: '0.9rem'
+                                                        }}
+                                                    />
+                                                    <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>원</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => removeProduct(product)}
+                                                    style={{
+                                                        width: '32px', height: '32px', borderRadius: '8px',
+                                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                        background: 'rgba(239, 68, 68, 0.1)',
+                                                        color: '#ef4444', cursor: 'pointer', display: 'flex',
+                                                        alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0
+                                                    }}
+                                                >✕</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* 새 상품 추가 */}
+                                <div style={{ marginTop: '16px', padding: '16px', borderRadius: '12px', border: '1px dashed rgba(0, 255, 136, 0.3)', background: 'rgba(0, 255, 136, 0.03)' }}>
+                                    <p style={{ color: '#00FF88', fontWeight: 600, marginBottom: '10px', fontSize: '0.85rem' }}>➕ 새 상품 추가</p>
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                        <input
+                                            type="text"
+                                            value={newProductName}
+                                            onChange={(e) => setNewProductName(e.target.value)}
+                                            placeholder="상품명"
+                                            style={{ flex: '1', minWidth: '120px', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.9rem' }}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={newProductPrice}
+                                            onChange={(e) => setNewProductPrice(e.target.value)}
+                                            placeholder="가격"
+                                            style={{ width: '120px', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.9rem', textAlign: 'right' }}
+                                        />
+                                        <button
+                                            onClick={addProduct}
+                                            style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #00FF88, #00c66e)', color: '#000', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}
+                                        >추가</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 하단 버튼 */}
+                            <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '10px', flexShrink: 0 }}>
+                                <button
+                                    onClick={() => setShowPriceSettings(false)}
+                                    style={{
+                                        flex: 1, padding: '14px', borderRadius: '12px',
+                                        border: '1px solid rgba(255,255,255,0.15)',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        color: '#9ca3af', fontWeight: 600, cursor: 'pointer', fontSize: '1rem'
+                                    }}
+                                >취소</button>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    style={{
+                                        flex: 2, padding: '14px', borderRadius: '12px',
+                                        border: 'none',
+                                        background: saving ? 'rgba(0, 255, 136, 0.3)' : 'linear-gradient(135deg, #00FF88, #00c66e)',
+                                        color: '#000', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontSize: '1rem',
+                                        boxShadow: saving ? 'none' : '0 0 20px rgba(0, 255, 136, 0.3)'
+                                    }}
+                                >{saving ? '저장 중...' : '💾 저장하기'}</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             // 매출 입력 모달 컴포넌트
             const createEmptyModalState = () => ({
                 customerName: '',
@@ -4304,7 +4650,8 @@
                 discounts: {},
                 manualPriceEdit: false,
                 otherItemName: '',
-                otherItemPrice: ''
+                otherItemPrice: '',
+                customProducts: {}
             });
 
             const deriveModalStateFromDetail = (detail) => {
@@ -4516,8 +4863,28 @@
                         });
                     }
 
+                    // 커스텀 카테고리 처리
+                    if (modalData.customProducts) {
+                        Object.keys(modalData.customProducts).forEach(catKey => {
+                            const productName = modalData.customProducts[catKey];
+                            if (productName) {
+                                const catLabel = categoryConfig[catKey]?.label || catKey;
+                                const originalPrice = productPrices[productName] || 0;
+                                buildItem({
+                                    key: catKey,
+                                    label: catLabel,
+                                    productName,
+                                    categoryKey: catKey,
+                                    originalPrice,
+                                    discountEligible: true,
+                                    displayName: `${catLabel}: ${productName}`
+                                });
+                            }
+                        });
+                    }
+
                     return items;
-                }, [modalData.healthProduct, modalData.ptProduct, modalData.pilatesProduct, modalData.neofitProduct, modalData.lockerType, modalData.lockerPeriod, modalData.discounts]);
+                }, [modalData.healthProduct, modalData.ptProduct, modalData.pilatesProduct, modalData.neofitProduct, modalData.lockerType, modalData.lockerPeriod, modalData.discounts, modalData.customProducts]);
 
                 const lineItemTotals = React.useMemo(() => {
                     const originalSum = selectedLineItems.reduce((sum, item) => sum + (item.originalPrice || 0), 0);
@@ -4869,6 +5236,32 @@
                                         </select>
                                     </div>
                                 )}
+
+                                {/* 커스텀 카테고리 드롭다운 */}
+                                {customCategories.map(catKey => {
+                                    const cat = categoryConfig[catKey];
+                                    if (!cat || !cat.products || cat.products.length === 0) return null;
+                                    return (
+                                        <div key={catKey}>
+                                            <label className="block text-sm font-semibold mb-2 text-gray-300">{cat.label}</label>
+                                            <select
+                                                value={(modalData.customProducts && modalData.customProducts[catKey]) || ''}
+                                                onChange={(e) => setModalData({
+                                                    ...modalData,
+                                                    customProducts: { ...(modalData.customProducts || {}), [catKey]: e.target.value }
+                                                })}
+                                                className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                            >
+                                                <option value="">{cat.label} 선택</option>
+                                                {cat.products.map(product => (
+                                                    <option key={product} value={product}>
+                                                        {product} - {(productPrices[product] || 0).toLocaleString()}원
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    );
+                                })}
 
                                 {/* 기타 매출 입력 섹션 */}
                                 <div style={{ borderTop: '1px solid rgba(139, 92, 246, 0.3)', paddingTop: '1rem', marginTop: '1rem' }}>
@@ -6856,18 +7249,22 @@
                         {showClothingLockerModal && <ClothingLockerModal />}
                         {/* 기타 매출 모달 */}
                         {showOtherModal && <OtherModal />}
+                        {/* 가격 설정 모달 */}
+                        {showPriceSettings && <PriceSettingsModal />}
                         {/* 헤더 */}
                         <div className="text-center mb-8 sm:mb-10 relative">
                             <h1 className="text-3xl sm:text-5xl font-black mb-2 sm:mb-3" style={{ color: '#00FF88' }}>
                                 NeoFit PayCalc
                             </h1>
                             <p className="text-gray-400 text-base sm:text-lg">네오핏 급여 계산기</p>
-                            <button
-                                onClick={() => authService.logout()}
-                                className="absolute top-0 right-0 glass-effect hover:border-red-400 rounded-lg px-4 py-2 text-sm transition-all text-white"
-                            >
-                                로그아웃
-                            </button>
+                            <div className="absolute top-0 right-0" style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    onClick={() => authService.logout()}
+                                    className="glass-effect hover:border-red-400 rounded-lg px-4 py-2 text-sm transition-all text-white"
+                                >
+                                    로그아웃
+                                </button>
+                            </div>
                         </div>
 
                         {/* 회원 검색 */}
@@ -7140,6 +7537,15 @@
                                     </h2>
                                     {viewMode === 'daily' && (
                                         <div className="flex gap-2">
+                                            {/* 설정 아이콘 */}
+                                            <button
+                                                onClick={() => setShowPriceSettings(true)}
+                                                className="glass-effect rounded-full p-3 border-green-500 hover:border-green-400 transition-all hover:shadow-lg"
+                                                title="가격 설정"
+                                            >
+                                                <span style={{ fontSize: '20px' }}>⚙️</span>
+                                            </button>
+                                            {/* + 버튼 */}
                                             <div className="relative group">
                                                 <button
                                                     onClick={() => {
