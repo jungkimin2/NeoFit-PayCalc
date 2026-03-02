@@ -3241,6 +3241,15 @@
                     }
                 }
 
+                // 커스텀 카테고리 중 PT 관련이면 'pt'로 분류
+                const saleCat = (sale.category || '').toString().trim();
+                if (saleCat && categoryConfig[saleCat]) {
+                    const catLabel = (categoryConfig[saleCat].label || '').toLowerCase();
+                    if (catLabel.includes('pt') || catLabel.includes('피티')) {
+                        return 'pt';
+                    }
+                }
+
                 return 'etc';
             };
 
@@ -3770,7 +3779,7 @@
                 },
                 {
                     key: 'pt',
-                    label: '1:1 PT',
+                    label: '1:1 , 2:1 PT',
                     icon: '🏋️',
                     color: '#fbbf24',
                     accent: 'from-amber-400 to-amber-500'
@@ -6462,7 +6471,7 @@
                 );
             };
 
-            // 1:1 PT 매출 모달 컴포넌트
+            // 1:1 , 2:1 PT 매출 모달 컴포넌트
             const PtModal = () => {
                 const ptData = getPtDetails();
                 const totalAmount = ptData.reduce((sum, item) => sum + (item.price || 0), 0);
@@ -6476,16 +6485,16 @@
                     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowPtModal(false)}>
                         <div className="glass-effect rounded-2xl p-6 slide-in" style={{ width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
                             <h3 className="text-2xl font-bold mb-6 text-center" style={{ color: '#F59E0B' }}>
-                                🏋️ 1:1 PT 매출 현황 ({selectedMonth + 1}월)
+                                🏋️ 1:1 , 2:1 PT 매출 현황 ({selectedMonth + 1}월)
                             </h3>
 
                             <div className="mb-6 text-center">
                                 <div className="glass-effect rounded-xl p-4 mb-4">
-                                    <p className="text-gray-400 text-sm mb-1">총 1:1 PT 결제 건수</p>
+                                    <p className="text-gray-400 text-sm mb-1">총 PT 결제 건수</p>
                                     <p className="text-3xl font-bold text-white">{ptData.length}건</p>
                                 </div>
                                 <div className="glass-effect rounded-xl p-4">
-                                    <p className="text-gray-400 text-sm mb-1">총 1:1 PT 매출</p>
+                                    <p className="text-gray-400 text-sm mb-1">총 1:1 , 2:1 PT 매출</p>
                                     <p className="text-3xl font-bold" style={{ color: '#F59E0B' }}>
                                         {totalAmount.toLocaleString()}원
                                     </p>
@@ -6495,8 +6504,8 @@
                             {ptData.length === 0 ? (
                                 <div className="text-center py-8">
                                     <div className="text-6xl mb-4">🏋️</div>
-                                    <p className="text-gray-400 text-lg">이번 달 1:1 PT 매출이 없습니다</p>
-                                    <p className="text-gray-500 text-sm mt-2">1:1 PT 서비스 판매 시 여기에 표시됩니다</p>
+                                    <p className="text-gray-400 text-lg">이번 달 PT 매출이 없습니다</p>
+                                    <p className="text-gray-500 text-sm mt-2">PT 서비스 판매 시 여기에 표시됩니다</p>
                                 </div>
                             ) : (
                                 <div className="max-h-96 overflow-y-auto">
@@ -7360,7 +7369,7 @@
                         {showHealthModal && <HealthModal />}
                         {/* 네오핏 매출 모달 */}
                         {showNeofitModal && <NeofitModal />}
-                        {/* 1:1 PT 매출 모달 */}
+                        {/* 1:1 , 2:1 PT 매출 모달 */}
                         {showPtModal && <PtModal />}
                         {/* 운동복/락커 매출 모달 */}
                         {showClothingLockerModal && <ClothingLockerModal />}
@@ -7763,7 +7772,7 @@
                                                 >
                                                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-600/20 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
                                                     <div className="relative">
-                                                        <span>1:1 PT 매출</span>
+                                                        <span>1:1 , 2:1 PT 매출</span>
                                                     </div>
                                                 </button>
 
