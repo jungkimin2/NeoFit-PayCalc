@@ -2832,10 +2832,22 @@
             React.useEffect(() => {
                 if (!user) return;
                 const loadSettings = async () => {
-                    const result = await salesService.loadProductSettings();
-                    if (result.success && result.data) {
-                        if (result.data.categories) setCategoryConfig(result.data.categories);
-                        if (result.data.prices) setProductPrices(prev => ({ ...prev, ...result.data.prices }));
+                    try {
+                        const result = await salesService.loadProductSettings();
+                        console.log('[NeoFit] 가격 설정 로드 결과:', result);
+                        if (result.success && result.data) {
+                            if (result.data.categories) {
+                                // 기본 카테고리와 Firebase 데이터 병합
+                                const merged = { ...DEFAULT_CATEGORIES, ...result.data.categories };
+                                console.log('[NeoFit] 병합된 카테고리:', merged);
+                                setCategoryConfig(merged);
+                            }
+                            if (result.data.prices) {
+                                setProductPrices(prev => ({ ...prev, ...result.data.prices }));
+                            }
+                        }
+                    } catch (err) {
+                        console.error('[NeoFit] 설정 로드 실패:', err);
                     }
                 };
                 loadSettings();
@@ -4306,7 +4318,10 @@
                 };
 
                 const addProduct = () => {
-                    if (!newProductName.trim()) return;
+                    if (!newProductName.trim()) {
+                        alert('상품명을 입력해주세요.');
+                        return;
+                    }
                     const price = parseInt(newProductPrice.replace(/[^0-9]/g, ''), 10) || 0;
                     setEditCats(prev => {
                         const updated = { ...prev };
@@ -4353,8 +4368,16 @@
                 };
 
                 const addCategory = () => {
-                    if (!newCatName.trim() || !newCatKey.trim()) return;
-                    const key = newCatKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    if (!newCatName.trim()) {
+                        alert('카테고리 이름을 입력해주세요.');
+                        return;
+                    }
+                    // 키가 비어있으면 이름에서 자동 생성
+                    let key = newCatKey.trim();
+                    if (!key) {
+                        key = 'custom_' + Date.now();
+                    }
+                    key = key.toLowerCase().replace(/[^a-z0-9_]/g, '');
                     if (editCats[key]) {
                         alert('이미 존재하는 카테고리 키입니다.');
                         return;
@@ -4383,16 +4406,38 @@
                     setActiveTab('health');
                 };
 
+                // 카테고리 순서 변경
+                const moveCategory = (catKey, direction) => {
+                    setEditCats(prev => {
+                        const keys = Object.keys(prev);
+                        const idx = keys.indexOf(catKey);
+                        const newIdx = idx + direction;
+                        if (newIdx < 0 || newIdx >= keys.length) return prev;
+                        // 키 순서 교환
+                        [keys[idx], keys[newIdx]] = [keys[newIdx], keys[idx]];
+                        // 새 순서로 객체 재구성
+                        const reordered = {};
+                        keys.forEach(k => { reordered[k] = prev[k]; });
+                        return reordered;
+                    });
+                };
+
                 const handleSave = async () => {
                     setSaving(true);
                     try {
+                        // 기본 카테고리와 편집된 카테고리 병합
+                        const mergedCats = { ...DEFAULT_CATEGORIES, ...editCats };
+                        const mergedPrices = { ...DEFAULT_PRICES, ...editPrices };
+                        console.log('[NeoFit] 저장할 카테고리:', mergedCats);
+                        console.log('[NeoFit] 저장할 가격:', mergedPrices);
                         const result = await salesService.saveProductSettings({
-                            categories: editCats,
-                            prices: editPrices
+                            categories: mergedCats,
+                            prices: mergedPrices
                         });
                         if (result.success) {
-                            setCategoryConfig(editCats);
-                            setProductPrices(editPrices);
+                            console.log('[NeoFit] 저장 성공! categoryConfig 업데이트');
+                            setCategoryConfig(mergedCats);
+                            setProductPrices(mergedPrices);
                             alert('가격 설정이 저장되었습니다!');
                             setShowPriceSettings(false);
                         } else {
@@ -4437,26 +4482,53 @@
                             </div>
 
                             {/* 카테고리 탭 */}
-                            <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', flexShrink: 0, display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                {editCatKeys.map(catKey => (
-                                    <button
-                                        key={catKey}
-                                        onClick={() => setActiveTab(catKey)}
-                                        style={{
-                                            padding: '8px 16px',
-                                            borderRadius: '10px',
-                                            border: activeTab === catKey ? '1px solid #00FF88' : '1px solid rgba(255,255,255,0.1)',
-                                            background: activeTab === catKey ? 'rgba(0, 255, 136, 0.15)' : 'rgba(255,255,255,0.05)',
-                                            color: activeTab === catKey ? '#00FF88' : '#9ca3af',
-                                            fontWeight: activeTab === catKey ? 700 : 500,
-                                            cursor: 'pointer',
-                                            whiteSpace: 'nowrap',
-                                            fontSize: '0.85rem',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        {editCats[catKey]?.label || catKey}
-                                    </button>
+                            <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', flexShrink: 0, display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                {editCatKeys.map((catKey, catIdx) => (
+                                    <div key={catKey} style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
+                                        {activeTab === catKey && catIdx > 0 && (
+                                            <button
+                                                onClick={() => moveCategory(catKey, -1)}
+                                                style={{
+                                                    width: '24px', height: '32px', borderRadius: '6px 0 0 6px',
+                                                    border: '1px solid rgba(0, 255, 136, 0.3)', borderRight: 'none',
+                                                    background: 'rgba(0, 255, 136, 0.1)',
+                                                    color: '#00FF88', cursor: 'pointer', fontSize: '0.7rem',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+                                                }}
+                                                title="좌측으로 이동"
+                                            >◀</button>
+                                        )}
+                                        <button
+                                            onClick={() => setActiveTab(catKey)}
+                                            style={{
+                                                padding: '8px 16px',
+                                                borderRadius: activeTab === catKey ? (catIdx === 0 ? '10px 0 0 10px' : catIdx === editCatKeys.length - 1 ? '0 10px 10px 0' : '0') : '10px',
+                                                border: activeTab === catKey ? '1px solid #00FF88' : '1px solid rgba(255,255,255,0.1)',
+                                                background: activeTab === catKey ? 'rgba(0, 255, 136, 0.15)' : 'rgba(255,255,255,0.05)',
+                                                color: activeTab === catKey ? '#00FF88' : '#9ca3af',
+                                                fontWeight: activeTab === catKey ? 700 : 500,
+                                                cursor: 'pointer',
+                                                whiteSpace: 'nowrap',
+                                                fontSize: '0.85rem',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {editCats[catKey]?.label || catKey}
+                                        </button>
+                                        {activeTab === catKey && catIdx < editCatKeys.length - 1 && (
+                                            <button
+                                                onClick={() => moveCategory(catKey, 1)}
+                                                style={{
+                                                    width: '24px', height: '32px', borderRadius: '0 6px 6px 0',
+                                                    border: '1px solid rgba(0, 255, 136, 0.3)', borderLeft: 'none',
+                                                    background: 'rgba(0, 255, 136, 0.1)',
+                                                    color: '#00FF88', cursor: 'pointer', fontSize: '0.7rem',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+                                                }}
+                                                title="우측으로 이동"
+                                            >▶</button>
+                                        )}
+                                    </div>
                                 ))}
                                 <button
                                     onClick={() => setShowAddCategory(!showAddCategory)}
