@@ -2837,9 +2837,17 @@
                         console.log('[NeoFit] 가격 설정 로드 결과:', result);
                         if (result.success && result.data) {
                             if (result.data.categories) {
-                                // 기본 카테고리와 Firebase 데이터 병합
-                                const merged = { ...DEFAULT_CATEGORIES, ...result.data.categories };
-                                console.log('[NeoFit] 병합된 카테고리:', merged);
+                                // 기존 키 유지 및 Firebase 데이터 병합 (Firebase의 순서 존중)
+                                const merged = {};
+                                // Firebase에 있는 순서대로 먼저 추가
+                                Object.keys(result.data.categories).forEach(k => {
+                                    merged[k] = result.data.categories[k];
+                                });
+                                // Firebase에 없는 기본 카테고리가 있다면 뒤에 추가 (혹시 모를 누락 방지)
+                                Object.keys(DEFAULT_CATEGORIES).forEach(k => {
+                                    if (!merged[k]) merged[k] = DEFAULT_CATEGORIES[k];
+                                });
+                                console.log('[NeoFit] 병합된 카테고리 (순서 유지):', merged);
                                 setCategoryConfig(merged);
                             }
                             if (result.data.prices) {
@@ -4425,8 +4433,17 @@
                 const handleSave = async () => {
                     setSaving(true);
                     try {
-                        // 기본 카테고리와 편집된 카테고리 병합
-                        const mergedCats = { ...DEFAULT_CATEGORIES, ...editCats };
+                        // 사용자가 설정한 editCats의 '키 순서'를 그대로 유지하면서 병합
+                        const mergedCats = {};
+                        Object.keys(editCats).forEach(k => {
+                            mergedCats[k] = editCats[k];
+                        });
+                        // 삭제되지 않은 기본 카테고리 중 editCats에 없는 것이 혹시 있다면 끝에 추가
+                        Object.keys(DEFAULT_CATEGORIES).forEach(k => {
+                            if (!mergedCats[k] && ['health', 'pt', 'pilates', 'neofit', 'locker'].includes(k)) {
+                                mergedCats[k] = DEFAULT_CATEGORIES[k];
+                            }
+                        });
                         const mergedPrices = { ...DEFAULT_PRICES, ...editPrices };
                         console.log('[NeoFit] 저장할 카테고리:', mergedCats);
                         console.log('[NeoFit] 저장할 가격:', mergedPrices);
