@@ -5193,147 +5193,169 @@
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold mb-2 text-gray-300">헬스 이용권</label>
-                                    <select
-                                        value={modalData.healthProduct}
-                                        onChange={(e) => setModalData({ ...modalData, healthProduct: e.target.value })}
-                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
-                                    >
-                                        <option value="">헬스 이용권 선택</option>
-                                        {healthProducts.map(product => (
-                                            <option key={product} value={product}>
-                                                {product} - {productPrices[product].toLocaleString()}원
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold mb-2 text-gray-300">1:1 PT 이용권</label>
-                                    <select
-                                        value={modalData.ptProduct}
-                                        onChange={(e) => setModalData({ ...modalData, ptProduct: e.target.value })}
-                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
-                                    >
-                                        <option value="">1:1 PT 이용권 선택</option>
-                                        {ptProducts.map(product => (
-                                            <option key={product} value={product}>
-                                                {product} - {productPrices[product].toLocaleString()}원
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold mb-2 text-gray-300">필라테스 이용권</label>
-                                    <select
-                                        value={modalData.pilatesProduct}
-                                        onChange={(e) => setModalData({ ...modalData, pilatesProduct: e.target.value })}
-                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
-                                    >
-                                        <option value="">필라테스 이용권 선택</option>
-                                        <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
-                                            ─────── 주 2회 상품 ───────
-                                        </option>
-                                        {pilatesProducts.slice(0, 3).map(product => (
-                                            <option key={product} value={product}>
-                                                {product} - {productPrices[product].toLocaleString()}원
-                                            </option>
-                                        ))}
-                                        <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
-                                            ─────── 주 3회 상품 ───────
-                                        </option>
-                                        {pilatesProducts.slice(3, 6).map(product => (
-                                            <option key={product} value={product}>
-                                                {product} - {productPrices[product].toLocaleString()}원
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold mb-2 text-gray-300">네오핏 이용권</label>
-                                    <select
-                                        value={modalData.neofitProduct}
-                                        onChange={(e) => setModalData({ ...modalData, neofitProduct: e.target.value })}
-                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
-                                    >
-                                        <option value="">네오핏 이용권 선택</option>
-                                        <option value={neofitProducts[0]}>
-                                            {neofitProducts[0]} - {productPrices[neofitProducts[0]].toLocaleString()}원
-                                        </option>
-                                        <option value={neofitProducts[1]}>
-                                            {neofitProducts[1]} - {productPrices[neofitProducts[1]].toLocaleString()}원
-                                        </option>
-                                        <option value={neofitProducts[2]}>
-                                            {neofitProducts[2]} - {productPrices[neofitProducts[2]].toLocaleString()}원
-                                        </option>
-                                        <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
-                                            ─────── 네오핏 무제한권 ───────
-                                        </option>
-                                        {neofitProducts.slice(3, 6).map(product => (
-                                            <option key={product} value={product}>
-                                                {product} - {productPrices[product].toLocaleString()}원
-                                            </option>
-                                        ))}
-                                        <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
-                                            ─────── 네오핏 주 2회 ───────
-                                        </option>
-                                        {neofitProducts.slice(6, 9).map(product => (
-                                            <option key={product} value={product}>
-                                                {product} - {productPrices[product].toLocaleString()}원
-                                            </option>
-                                        ))}
-                                        <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
-                                            ─────── 네오핏 주 3회 ───────
-                                        </option>
-                                        {neofitProducts.slice(9, 12).map(product => (
-                                            <option key={product} value={product}>
-                                                {product} - {productPrices[product].toLocaleString()}원
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold mb-2 text-gray-300">운동복/락커 선택</label>
-                                    <select
-                                        value={modalData.lockerType}
-                                        onChange={(e) => setModalData({ ...modalData, lockerType: e.target.value, lockerPeriod: '' })}
-                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
-                                    >
-                                        <option value="">운동복/락커 선택</option>
-                                        {lockerProducts.map(product => (
-                                            <option key={product} value={product}>{product}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {modalData.lockerType && (
-                                    <div>
-                                        <label className="block text-sm font-semibold mb-2 text-gray-300">{modalData.lockerType} 이용 기간</label>
-                                        <select
-                                            value={modalData.lockerPeriod}
-                                            onChange={(e) => setModalData({ ...modalData, lockerPeriod: e.target.value })}
-                                            className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
-                                        >
-                                            <option value="">기간 선택</option>
-                                            {lockerPeriods.map(period => {
-                                                const priceKey = `${modalData.lockerType} ${period}`;
-                                                const price = productPrices[priceKey] || 0;
-                                                return (
-                                                    <option key={period} value={period}>
-                                                        {period} - {price.toLocaleString()}원
+                                {/* 카테고리 순서대로 동적 렌더링 */}
+                                {Object.keys(categoryConfig).map(catKey => {
+                                    // 헬스 이용권
+                                    if (catKey === 'health') {
+                                        return (
+                                            <div key="health">
+                                                <label className="block text-sm font-semibold mb-2 text-gray-300">헬스 이용권</label>
+                                                <select
+                                                    value={modalData.healthProduct}
+                                                    onChange={(e) => setModalData({ ...modalData, healthProduct: e.target.value })}
+                                                    className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                                >
+                                                    <option value="">헬스 이용권 선택</option>
+                                                    {healthProducts.map(product => (
+                                                        <option key={product} value={product}>
+                                                            {product} - {productPrices[product].toLocaleString()}원
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        );
+                                    }
+                                    // 1:1 PT 이용권
+                                    if (catKey === 'pt') {
+                                        return (
+                                            <div key="pt">
+                                                <label className="block text-sm font-semibold mb-2 text-gray-300">1:1 PT 이용권</label>
+                                                <select
+                                                    value={modalData.ptProduct}
+                                                    onChange={(e) => setModalData({ ...modalData, ptProduct: e.target.value })}
+                                                    className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                                >
+                                                    <option value="">1:1 PT 이용권 선택</option>
+                                                    {ptProducts.map(product => (
+                                                        <option key={product} value={product}>
+                                                            {product} - {productPrices[product].toLocaleString()}원
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        );
+                                    }
+                                    // 필라테스 이용권
+                                    if (catKey === 'pilates') {
+                                        return (
+                                            <div key="pilates">
+                                                <label className="block text-sm font-semibold mb-2 text-gray-300">필라테스 이용권</label>
+                                                <select
+                                                    value={modalData.pilatesProduct}
+                                                    onChange={(e) => setModalData({ ...modalData, pilatesProduct: e.target.value })}
+                                                    className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                                >
+                                                    <option value="">필라테스 이용권 선택</option>
+                                                    <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
+                                                        ─────── 주 2회 상품 ───────
                                                     </option>
-                                                );
-                                            })}
-                                        </select>
-                                    </div>
-                                )}
-
-                                {/* 커스텀 카테고리 드롭다운 */}
-                                {customCategories.map(catKey => {
+                                                    {pilatesProducts.slice(0, 3).map(product => (
+                                                        <option key={product} value={product}>
+                                                            {product} - {productPrices[product].toLocaleString()}원
+                                                        </option>
+                                                    ))}
+                                                    <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
+                                                        ─────── 주 3회 상품 ───────
+                                                    </option>
+                                                    {pilatesProducts.slice(3, 6).map(product => (
+                                                        <option key={product} value={product}>
+                                                            {product} - {productPrices[product].toLocaleString()}원
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        );
+                                    }
+                                    // 네오핏 이용권
+                                    if (catKey === 'neofit') {
+                                        return (
+                                            <div key="neofit">
+                                                <label className="block text-sm font-semibold mb-2 text-gray-300">네오핏 이용권</label>
+                                                <select
+                                                    value={modalData.neofitProduct}
+                                                    onChange={(e) => setModalData({ ...modalData, neofitProduct: e.target.value })}
+                                                    className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                                >
+                                                    <option value="">네오핏 이용권 선택</option>
+                                                    <option value={neofitProducts[0]}>
+                                                        {neofitProducts[0]} - {productPrices[neofitProducts[0]].toLocaleString()}원
+                                                    </option>
+                                                    <option value={neofitProducts[1]}>
+                                                        {neofitProducts[1]} - {productPrices[neofitProducts[1]].toLocaleString()}원
+                                                    </option>
+                                                    <option value={neofitProducts[2]}>
+                                                        {neofitProducts[2]} - {productPrices[neofitProducts[2]].toLocaleString()}원
+                                                    </option>
+                                                    <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
+                                                        ─────── 네오핏 무제한권 ───────
+                                                    </option>
+                                                    {neofitProducts.slice(3, 6).map(product => (
+                                                        <option key={product} value={product}>
+                                                            {product} - {productPrices[product].toLocaleString()}원
+                                                        </option>
+                                                    ))}
+                                                    <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
+                                                        ─────── 네오핏 주 2회 ───────
+                                                    </option>
+                                                    {neofitProducts.slice(6, 9).map(product => (
+                                                        <option key={product} value={product}>
+                                                            {product} - {productPrices[product].toLocaleString()}원
+                                                        </option>
+                                                    ))}
+                                                    <option disabled style={{ color: '#00FF88', fontWeight: 'bold', backgroundColor: 'rgba(0, 255, 136, 0.1)' }}>
+                                                        ─────── 네오핏 주 3회 ───────
+                                                    </option>
+                                                    {neofitProducts.slice(9, 12).map(product => (
+                                                        <option key={product} value={product}>
+                                                            {product} - {productPrices[product].toLocaleString()}원
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        );
+                                    }
+                                    // 운동복/락커
+                                    if (catKey === 'locker') {
+                                        return (
+                                            <React.Fragment key="locker">
+                                                <div>
+                                                    <label className="block text-sm font-semibold mb-2 text-gray-300">운동복/락커 선택</label>
+                                                    <select
+                                                        value={modalData.lockerType}
+                                                        onChange={(e) => setModalData({ ...modalData, lockerType: e.target.value, lockerPeriod: '' })}
+                                                        className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                                    >
+                                                        <option value="">운동복/락커 선택</option>
+                                                        {lockerProducts.map(product => (
+                                                            <option key={product} value={product}>{product}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                {modalData.lockerType && (
+                                                    <div>
+                                                        <label className="block text-sm font-semibold mb-2 text-gray-300">{modalData.lockerType} 이용 기간</label>
+                                                        <select
+                                                            value={modalData.lockerPeriod}
+                                                            onChange={(e) => setModalData({ ...modalData, lockerPeriod: e.target.value })}
+                                                            className="glass-effect rounded-lg px-4 py-3 w-full focus:border-green-400 focus:outline-none"
+                                                        >
+                                                            <option value="">기간 선택</option>
+                                                            {lockerPeriods.map(period => {
+                                                                const priceKey = `${modalData.lockerType} ${period}`;
+                                                                const price = productPrices[priceKey] || 0;
+                                                                return (
+                                                                    <option key={period} value={period}>
+                                                                        {period} - {price.toLocaleString()}원
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </div>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    }
+                                    // 커스텀 카테고리
                                     const cat = categoryConfig[catKey];
                                     if (!cat || !cat.products || cat.products.length === 0) return null;
                                     return (
